@@ -11,6 +11,9 @@ export class ConfigurationService {
   get JWT_SECRET_KEY() {
     return this.configService.get<string>('JWT_SECRET_KEY');
   }
+  get API_URL() { 
+    return this.configService.get<string>('API_URL');
+  }
 
   get CLOUDINARY_CLOUD_NAME() {
     return this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
