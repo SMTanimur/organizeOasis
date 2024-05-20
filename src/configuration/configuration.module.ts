@@ -1,0 +1,36 @@
+import { ConfigModule } from '@nestjs/config';
+import { ConfigurationService } from './configuration.service';
+import { Global, Module } from '@nestjs/common';
+import * as Joi from 'joi';
+
+@Global()
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+      validationSchema: Joi.object({
+        MONGODB_URI: Joi.string().required(),
+        API_URL: Joi.string().required(),
+        JWT_SECRET_KEY: Joi.string().required(),
+        SMPT_HOST: Joi.string().required(),
+        SMPT_SERVICE: Joi.string().required(),
+        GOOGLE_CLIENT_ID: Joi.string().required(),
+        GOOGLE_CLIENT_SECRET: Joi.string().required(),
+        SMPT_MAIL: Joi.string().required(),
+        SMPT_PORT: Joi.number().required(),
+        SMPT_PASSWORD: Joi.string().required(),
+        BRAND_NAME: Joi.string().required(),
+        WEB_URL: Joi.string().required(),
+        ADMIN_URL: Joi.string().required(),
+        CLOUDINARY_API_SECRET: Joi.string().required(),
+        CLOUDINARY_API_KEY: Joi.string().required(),
+        CLOUDINARY_CLOUD_NAME: Joi.string().required(),
+      }),
+    }),
+  ],
+  controllers: [],
+  providers: [ConfigurationService],
+  exports: [ConfigurationService],
+})
+export class ConfigurationModule {}
