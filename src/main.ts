@@ -29,7 +29,7 @@ async function bootstrap() {
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     });
 
-    app.use(cookieParser);
+    app.use(cookieParser());
     app.use(helmet());
     // Enable API versioning
     app.enableVersioning({
