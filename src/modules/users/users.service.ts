@@ -81,13 +81,9 @@ export class UsersService {
       const userData = new this.userModel(user);
       const password = await createHash(user.password);
       userData.password = password;
-      const data= await userData.save();
+      return await userData.save();
 
-      const token = this.jwtService.sign(createUserDto, { expiresIn: '1h' });
-        return {
-           user:data,
-           token:token
-        }
+      
     } else {
       throw new HttpException('Email is already taken.', HttpStatus.CONFLICT);
     }
