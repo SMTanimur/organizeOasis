@@ -5,33 +5,11 @@ import { ConfigService } from '@nestjs/config';
 export class ConfigurationService {
   constructor(private readonly configService: ConfigService) {}
 
-  get API_URL() {
-    return this.configService.get<string>('API_URL');
-  }
-  get MAIL() {
-    return this.configService.get<string>('MAIL');
-  }
-
   get WEB_URL() {
     return this.configService.get<string>('WEB_URL');
   }
   get JWT_SECRET_KEY() {
     return this.configService.get<string>('JWT_SECRET_KEY');
-  }
-  get SMPT_HOST() {
-    return this.configService.get<string>('SMPT_HOST');
-  }
-  get SMPT_SERVICE() {
-    return this.configService.get<string>('SMPT_SERVICE');
-  }
-  get SMPT_PASSWORD() {
-    return this.configService.get<string>('SMPT_PASSWORD');
-  }
-  get SMPT_MAIL() {
-    return this.configService.get<string>('SMPT_MAIL');
-  }
-  get SMPT_PORT() {
-    return this.configService.get<number>('SMPT_PORT');
   }
 
   get CLOUDINARY_CLOUD_NAME() {
