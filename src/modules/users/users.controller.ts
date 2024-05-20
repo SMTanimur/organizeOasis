@@ -57,7 +57,7 @@ export class UsersController {
     groups: ['me'],
   })
   @Get('me')
-  // @Roles(Role.CUSTOMER, Role.ADMIN)
+  // @Roles(Role.USER, Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   public async me(@Request() request) {
     return this.usersService.me(request.user);
@@ -65,7 +65,7 @@ export class UsersController {
   @ApiOperation({ summary: 'User get his Profile' })
   @ApiOkResponse({ description: 'success' })
   @UseGuards(AuthGuard('jwt'))
-  @Roles(Role.CUSTOMER, Role.ADMIN)
+  @Roles(Role.USER, Role.ADMIN)
   @Get(':id')
   getUser(@Param('id') id: string) {
     return this.usersService.findOne(id);

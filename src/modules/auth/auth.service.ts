@@ -106,7 +106,7 @@ export class AuthService {
         lastName: userPayload.family_name,
         email: userPayload.email,
         provider_id: userPayload.sub,
-        role: role ? role : Role.CUSTOMER,
+        role: role ? role : Role.USER,
         avatar: userPayload.picture ? userPayload.picture : '',
         password: randomString,
         provider: Provider.GOOGLE,

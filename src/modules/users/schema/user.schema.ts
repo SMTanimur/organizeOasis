@@ -87,8 +87,8 @@ export class User {
   @IsEnum(Role)
   @IsOptional()
   @Prop({
-    enum: [Role.ADMIN, Role.SELLER, Role.CUSTOMER],
-    default: Role.CUSTOMER,
+    enum: [Role.ADMIN,  Role.USER],
+    default: Role.USER,
     type: String,
   })
   role?: string;
