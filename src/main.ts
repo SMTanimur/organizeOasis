@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 // somewhere in your initialization file
 
 import helmet from 'helmet';
@@ -21,16 +21,15 @@ async function bootstrap() {
       credentials: true,
       origin: [
         configurationService.WEB_URL,
-   
+
         'http://localhost:4200',
         'http://localhost:4000',
         'https://accounts.google.com',
       ],
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     });
-    
 
-    app.use(cookieParser());
+    app.use(cookieParser);
     app.use(helmet());
     // Enable API versioning
     app.enableVersioning({
@@ -41,7 +40,7 @@ async function bootstrap() {
     const config = new DocumentBuilder()
       .setTitle('Organize - An API for Organize')
       .setDescription(
-        'Organize is your source for quality auto parts, advice and accessories. View family care tips, shop online for home delivery, or pick up in one of our 4000 convenient store locations in 30 minutes or less.'
+        'Organize is your source for quality auto parts, advice and accessories. View family care tips, shop online for home delivery, or pick up in one of our 4000 convenient store locations in 30 minutes or less.',
       )
       .setVersion('1.0')
       .addServer(configurationService.API_URL)
@@ -58,7 +57,7 @@ async function bootstrap() {
     await app.listen(port);
     Logger.log(
       ` Alhamdulillah! - Application is running on: http://localhost:${port} 🚀 `
-        .bgCyan.black
+        .bgCyan.black,
     );
   } catch (error) {
     Logger.error(`Error: ${error.message}`.red);

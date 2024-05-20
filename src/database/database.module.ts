@@ -4,7 +4,7 @@ import { Logger, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import 'colors';
-import * as mongoosePaginate from 'mongoose-paginate-v2';
+import  mongoosePaginate from 'mongoose-paginate-v2';
 import { ConfigurationService } from '../configuration/configuration.service';
 
 
