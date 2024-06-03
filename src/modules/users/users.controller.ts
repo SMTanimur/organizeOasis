@@ -13,9 +13,9 @@ import {
   SerializeOptions,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+
 import {
-  ApiBearerAuth,
+
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
