@@ -9,7 +9,7 @@ import {
   Patch,
   Post,
   Query,
-  Request,
+  Req,
   SerializeOptions,
   UseGuards,
 } from '@nestjs/common';
@@ -30,8 +30,9 @@ import { GetUsersDto } from './dto/get-users.dto';
 import { BanUserDto, UpdateUserDto } from './dto/update-user.dto';
 import { User } from './schema/user.schema';
 import { UsersService } from './users.service';
+import { Request } from 'express';
 
-@ApiBearerAuth()
+
 @UseGuards(JwtGuard, RolesGuard)
 @ApiTags(User.name)
 @Controller({ path: 'users', version: '1' })
@@ -59,7 +60,8 @@ export class UsersController {
   @Get('me')
   // @Roles(Role.USER, Role.ADMIN)
   @HttpCode(HttpStatus.OK)
-  public async me(@Request() request) {
+  public async me(@Req() request: Request) {
+    console.log(request)
     return this.usersService.me(request.user);
   }
   @ApiOperation({ summary: 'User get his Profile' })
@@ -74,7 +76,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Update user' })
   @ApiCreatedResponse({ description: 'User successfully updated' })
   @Patch()
-  updateUser(@Body() updateUserDto: UpdateUserDto, @Request() request) {
+  updateUser(@Body() updateUserDto: UpdateUserDto, @Req() request) {
     updateUserDto.userId = request.user._id;
     return this.usersService.update(updateUserDto);
   }

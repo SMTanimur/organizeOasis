@@ -35,4 +35,7 @@ export class ConfigurationService {
   get GOOGLE_CLIENT_SECRET() {
     return this.configService.get<string>('GOOGLE_CLIENT_SECRET');
   }
+  get JWT_EXPIRATION() {
+    return this.configService.get<string>('JWT_EXPIRATION');
+  }
 }

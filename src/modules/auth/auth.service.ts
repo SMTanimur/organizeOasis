@@ -10,7 +10,7 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-
+import ms from 'ms';
 import { LoginDto } from './dto/login.dto';
 import { UsersService } from '../users/users.service';
 import { Provider, Role } from '../../common/constants/roles.enum';
@@ -18,18 +18,21 @@ import * as bcrypt from 'bcryptjs';
 
 import { ConfigurationService } from '../../configuration/configuration.service';
 
-import { JWTService } from './jwt.service';
+
 import { pick } from 'lodash';
 import { OAuth2Client } from 'google-auth-library';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { Response } from 'express';
+import { TokenPayload } from 'src/types/jwt-payload.type';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly configurationService: ConfigurationService,
-    private readonly jwtService: JWTService
+    private readonly jwtService: JwtService
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,9 +40,8 @@ export class AuthService {
     return await this.usersService.validateUser(loginDto);
   }
 
-  async validateLogin(loginDto: LoginDto): Promise<{
+  async validateLogin(loginDto: LoginDto,response:Response): Promise<{
     token: string;
-    expires_in: string;
     user: object;
     message: string;
   }> {
@@ -61,13 +63,30 @@ export class AuthService {
       throw new UnauthorizedException('The password you entered is incorrect.');
     }
 
+    const expires = new Date();
+    expires.setMilliseconds(
+      expires.getMilliseconds() +
+        ms("10h"),
+    );
+
+    const tokenPayload: TokenPayload = {
+     email,
+     role
+    };
+   
+
+  
+
     const isValidPassword = await user.comparePassword(password);
 
     if (isValidPassword) {
-      const { access_token, expires_in } = await this.jwtService.createToken(
-        user.email,
-        user.role
-      );
+      const token = await this.jwtService.signAsync(tokenPayload);
+
+      response.cookie('Authentication', token, {
+        secure: true,
+        httpOnly: true,
+        expires,
+      });
       const userInfo = pick(user, [
         '_id',
         'addresses',
@@ -75,9 +94,11 @@ export class AuthService {
         'name',
         'role',
       ]);
+
+      
       return {
-        token: access_token,
-        expires_in,
+        token,
+  
         user: userInfo,
         message: 'Welcome back! 🎉',
       };

@@ -12,7 +12,7 @@ import { ConfigurationService } from '../configuration/configuration.service';
       ...JwtModule.registerAsync({
         useFactory: async (configurationService: ConfigurationService) => ({
           secret: configurationService.JWT_SECRET_KEY,
-          signOptions: { expiresIn: '3d' },
+          signOptions: { expiresIn: configurationService.JWT_EXPIRATION },
         }),
         inject: [ConfigurationService],
       }),

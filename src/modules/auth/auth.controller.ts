@@ -8,6 +8,7 @@ import {
   NotFoundException,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -28,8 +29,12 @@ import { pick } from 'lodash';
 
 import { ConfigurationService } from '../../configuration/configuration.service';
 import { AuthGuard } from '@nestjs/passport';
-import { JWTService } from './jwt.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import ms from 'ms';
+import { TokenPayload } from 'src/types/jwt-payload.type';
+import { Response } from 'express';
+import { LocalAuthGuard } from './guards/local.auth.guard';
+
 
 @ApiTags('Auth')
 @Controller({ path: 'auth', version: '1' })
@@ -40,70 +45,96 @@ export class AuthController {
     public readonly configurationService: ConfigurationService,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly jwt: JWTService,
+ 
 
   ) {}
 
   @ApiOperation({ summary: 'Register New User' })
   @ApiOkResponse({ description: 'Register user' })
   @Post('register')
-  async register(@Body() createUserDto: CreateUserDto) {
+  async register(@Body() createUserDto: CreateUserDto,response:Response) {
     const data = await this.usersService.create(createUserDto);
     await this.usersService.updateByEmail(data.email, {
       email_verified: true,
     });
 
-    const user = pick(data, ['_id', 'email', 'name', 'role']);
-    const { access_token, expires_in } = await this.jwt.createToken(
-      user.email,
-      user.role
+    const expires = new Date();
+    expires.setMilliseconds(
+      expires.getMilliseconds() +
+        ms("10h"),
     );
+
+    const tokenPayload: TokenPayload = {
+     email:createUserDto.email,
+     role:createUserDto.role
+    };
+    const user = pick(data, ['_id', 'email', 'name', 'role']);
+    const token = this.jwtService.sign(tokenPayload);
+
+    response.cookie('Authentication', token, {
+      secure: true,
+      httpOnly: true,
+      expires,
+    });
     return {
       message: `Welcome to ! Orga 🎉`,
       user: user,
-      token: access_token,
-      expires_in,
+      token
+   
     };
    
   }
 
-  @ApiOperation({ summary: 'Activate user account' })
-  @ApiCreatedResponse({ description: 'User account has been activated' })
-  @Post('activate')
-  async activate(@Body() body: AccountActivateDto) {
-    try {
-      const payload = this.jwtService.verify(body.token);
-      const data = await this.usersService.create(payload);
-      await this.usersService.updateByEmail(data.email, {
-        email_verified: true,
-      });
+  // @ApiOperation({ summary: 'Activate user account' })
+  // @ApiCreatedResponse({ description: 'User account has been activated' })
+  // @Post('activate')
+  // async activate(@Body() body: AccountActivateDto) {
+  //   try {
+  //     const payload = this.jwtService.verify(body.token);
+  //     const data = await this.usersService.create(payload);
+  //     await this.usersService.updateByEmail(data.email, {
+  //       email_verified: true,
+  //     });
 
-      const user = pick(data, ['_id', 'email', 'name', 'role']);
-      const { access_token, expires_in } = await this.jwt.createToken(
-        user.email,
-        user.role
-      );
-      return {
-        message: `Welcome to ! 🎉`,
-        user: user,
-        token: access_token,
-        expires_in,
-      };
-    } catch (error) {
-      throw new NotFoundException(error.message);
-    }
-  }
+  //     const user = pick(data, ['_id', 'email', 'name', 'role']);
+  //     const { access_token, expires_in } = await this.jwt.createToken(
+  //       user.email,
+  //       user.role
+  //     );
+  //     return {
+  //       message: `Welcome to ! 🎉`,
+  //       user: user,
+  //       token: access_token,
+  //       expires_in,
+  //     };
+  //   } catch (error) {
+  //     throw new NotFoundException(error.message);
+  //   }
+  // }
 
   @ApiOperation({ summary: 'Redirects user to client url after login' })
   @Post('google')
-  async loginWithGoogle(@Body('credential') credential: string) {
+  async loginWithGoogle(@Body('credential') credential: string,response:Response) {
     try {
       const user = await this.authService.authenticateWithGoogle(credential);
-      const { access_token, expires_in } = await this.jwt.createToken(
-        user.email,
-        user.role
+      const expires = new Date();
+      expires.setMilliseconds(
+        expires.getMilliseconds() +
+          ms("10h"),
       );
-      return { user, token: access_token, expires_in };
+  
+      const tokenPayload: TokenPayload = {
+       email:user.email,
+       role:user.role
+      };
+      const token = this.jwtService.sign(tokenPayload);
+
+    response.cookie('Authentication', token, {
+      secure: true,
+      httpOnly: true,
+      expires,
+    });
+      return { user, token };
     } catch (error) {
       throw new BadRequestException(
         'User with this email might already exist.'
@@ -129,10 +160,11 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Logs user into the system' })
   @ApiOkResponse({ description: 'Logged in successfully.' })
+
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Body() _body: LoginDto) {
-    return await this.authService.validateLogin(_body);
+  async login(@Body() _body: LoginDto,   @Res({passthrough: true})  response:Response) {
+    return await this.authService.validateLogin(_body,response);
   }
 
   @ApiOperation({ summary: 'User Logout Attempt' })

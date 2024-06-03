@@ -20,7 +20,7 @@ import { pick } from 'lodash';
 import { JwtService } from '@nestjs/jwt';
 
 import { UpdateEmailDto } from './dto/updateEmail.dto';
-import { AnyCatcher } from 'rxjs/internal/AnyCatcher';
+
 
 @Injectable()
 export class UsersService {
@@ -58,9 +58,9 @@ export class UsersService {
   async me(user: any): Promise<User> {
     return this.userModel
       .findOne({
-        _id: user._id,
+        email: user.email,
       })
-      .populate(['addresses']);
+     
   }
 
   async create(createUserDto: CreateUserDto): Promise<any> {
@@ -128,7 +128,7 @@ export class UsersService {
     return user;
   }
   async findOneByEmail(email: string) {
-    return await this.userModel.findOne({ email }).populate(['addresses']);
+    return await this.userModel.findOne({ email });
   }
 
   async validateUser(loginDto: LoginDto) {

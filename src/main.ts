@@ -44,7 +44,6 @@ async function bootstrap() {
       )
       .setVersion('1.0')
       .addServer(configurationService.API_URL)
-      .addBearerAuth()
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

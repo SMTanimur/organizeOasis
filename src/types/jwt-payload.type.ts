@@ -1,5 +1,4 @@
-export type JwtPayload = {
+export interface TokenPayload {
+  role: string;
   email: string;
-  username: string;
-  sub: string;
-};
+}
