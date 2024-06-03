@@ -20,6 +20,8 @@ import * as Joi from 'joi';
         CLOUDINARY_API_KEY: Joi.string().required(),
         CLOUDINARY_CLOUD_NAME: Joi.string().required(),
         JWT_EXPIRATION:Joi.string().required(),
+        SESSION_SECRET_KEY: Joi.string().required(),
+        SESSION_NAME: Joi.string().required(),
       }),
     }),
   ],

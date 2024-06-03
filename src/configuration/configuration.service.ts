@@ -38,4 +38,10 @@ export class ConfigurationService {
   get JWT_EXPIRATION() {
     return this.configService.get<string>('JWT_EXPIRATION');
   }
+  get SESSION_NAME() {
+    return this.configService.get<string>('SESSION_NAME');
+  }
+  get SESSION_SECRET_KEY() {
+    return this.configService.get<string>('SESSION_SECRET_KEY');
+  }
 }
