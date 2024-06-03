@@ -40,8 +40,7 @@ export class AuthService {
     return await this.usersService.validateUser(loginDto);
   }
 
-  async validateLogin(loginDto: LoginDto,response:Response): Promise<{
-    token: string;
+  async validateLogin(loginDto: LoginDto): Promise<{
     user: object;
     message: string;
   }> {
@@ -82,11 +81,11 @@ export class AuthService {
     if (isValidPassword) {
       const token = await this.jwtService.signAsync(tokenPayload);
 
-      response.cookie('Authentication', token, {
-        secure: true,
-        httpOnly: true,
-        expires,
-      });
+      // response.cookie('Authentication', token, {
+      //   secure: true,
+      //   httpOnly: true,
+      //   expires,
+      // });
       const userInfo = pick(user, [
         '_id',
         'addresses',
@@ -97,7 +96,7 @@ export class AuthService {
 
       
       return {
-        token,
+        // token,
   
         user: userInfo,
         message: 'Welcome back! 🎉',

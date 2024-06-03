@@ -9,6 +9,7 @@ import {
   Post,
   Req,
   Res,
+  Session,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -33,7 +34,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import ms from 'ms';
 import { TokenPayload } from 'src/types/jwt-payload.type';
 import { Response } from 'express';
-import { LocalAuthGuard } from './guards/local.auth.guard';
+import { CustomAuthGuard } from './guards/custom-auth.guard';
+
 
 
 @ApiTags('Auth')
@@ -52,34 +54,23 @@ export class AuthController {
   @ApiOperation({ summary: 'Register New User' })
   @ApiOkResponse({ description: 'Register user' })
   @Post('register')
-  async register(@Body() createUserDto: CreateUserDto,response:Response) {
+  async register(@Body() createUserDto: CreateUserDto,@Session() session: any) {
     const data = await this.usersService.create(createUserDto);
     await this.usersService.updateByEmail(data.email, {
       email_verified: true,
     });
 
-    const expires = new Date();
-    expires.setMilliseconds(
-      expires.getMilliseconds() +
-        ms("10h"),
-    );
+    
 
-    const tokenPayload: TokenPayload = {
-     email:createUserDto.email,
-     role:createUserDto.role
-    };
+   
     const user = pick(data, ['_id', 'email', 'name', 'role']);
-    const token = this.jwtService.sign(tokenPayload);
-
-    response.cookie('Authentication', token, {
-      secure: true,
-      httpOnly: true,
-      expires,
-    });
+   
+    session.passport = { user };
+   
     return {
       message: `Welcome to ! Orga 🎉`,
       user: user,
-      token
+    
    
     };
    
@@ -113,28 +104,13 @@ export class AuthController {
   // }
 
   @ApiOperation({ summary: 'Redirects user to client url after login' })
+  @UseGuards(CustomAuthGuard)
   @Post('google')
-  async loginWithGoogle(@Body('credential') credential: string,response:Response) {
+  async loginWithGoogle(@Body('credential') credential: string,@Session() session: any) {
     try {
       const user = await this.authService.authenticateWithGoogle(credential);
-      const expires = new Date();
-      expires.setMilliseconds(
-        expires.getMilliseconds() +
-          ms("10h"),
-      );
-  
-      const tokenPayload: TokenPayload = {
-       email:user.email,
-       role:user.role
-      };
-      const token = this.jwtService.sign(tokenPayload);
-
-    response.cookie('Authentication', token, {
-      secure: true,
-      httpOnly: true,
-      expires,
-    });
-      return { user, token };
+      session.passport = { user };
+      return { user , message:`Welcome to`};
     } catch (error) {
       throw new BadRequestException(
         'User with this email might already exist.'
@@ -160,11 +136,12 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Logs user into the system' })
   @ApiOkResponse({ description: 'Logged in successfully.' })
-
+  @UseGuards(CustomAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Body() _body: LoginDto,   @Res({passthrough: true})  response:Response) {
-    return await this.authService.validateLogin(_body,response);
+  async login(@Body() _body: LoginDto,    @Req() req,) {
+     await this.authService.validateLogin(_body);
+     return { message: 'Welcome back! 🎉', user: req.user };
   }
 
   @ApiOperation({ summary: 'User Logout Attempt' })
