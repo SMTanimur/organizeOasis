@@ -22,18 +22,19 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Role } from '../../common/constants/roles.enum';
-import { RolesGuard } from '../../common/guard';
+
 import { Roles } from '../../common/guard';
-import { JwtGuard } from '../auth/guards/jwt.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { GetUsersDto } from './dto/get-users.dto';
 import { BanUserDto, UpdateUserDto } from './dto/update-user.dto';
 import { User } from './schema/user.schema';
 import { UsersService } from './users.service';
 import { Request } from 'express';
+import { AuthenticatedGuard } from '../auth/guards/authenticated.guard';
+import { RolesGuard } from '../../common/guard';
 
 
-@UseGuards(JwtGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @ApiTags(User.name)
 @Controller({ path: 'users', version: '1' })
 export class UsersController {
@@ -45,7 +46,7 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthenticatedGuard)
   @Roles(Role.ADMIN)
   @Get()
   getAllUsers(@Query() query: GetUsersDto) {
@@ -57,16 +58,19 @@ export class UsersController {
   @SerializeOptions({
     groups: ['me'],
   })
+  @UseGuards(AuthenticatedGuard)
   @Get('me')
   // @Roles(Role.USER, Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   public async me(@Req() request: Request) {
     console.log(request)
-    return this.usersService.me(request.user);
+    const user=await this.usersService.me(request.user);
+    delete user.password
+    return user
   }
   @ApiOperation({ summary: 'User get his Profile' })
   @ApiOkResponse({ description: 'success' })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthenticatedGuard)
   @Roles(Role.USER, Role.ADMIN)
   @Get(':id')
   getUser(@Param('id') id: string) {
@@ -86,13 +90,6 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
-  @ApiOperation({ summary: 'User Ban' })
-  @ApiCreatedResponse({ description: 'User Ban successfully ' })
-  @Post('ban-user')
-  @Roles(Role.ADMIN)
-  banUser(@Body() banUserDto: BanUserDto) {
-    return this.usersService.banUser(banUserDto.id);
-  }
 
   @Post('active-user')
   @Roles(Role.ADMIN)
