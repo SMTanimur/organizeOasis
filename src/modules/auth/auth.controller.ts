@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -148,16 +149,16 @@ export class AuthController {
   @ApiOkResponse({
     description: 'User logout successfully.',
   })
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
-  @Post('logout')
-  async logout() {
-    return { message: 'Logout Success' };
+  @Delete('logout')
+  async logout(@Req() req, @Res() res) {
+    await req.session.destroy(() => null);
+    await res.clearCookie(this.configurationService.SESSION_NAME);
+    await req.logout(() => null);
+    return res.status(200).send('Successfully logout');
   }
 
   @ApiOperation({ summary: 'User  Password Change' })
   @Post('change-password')
-  @UseGuards(AuthGuard('jwt'))
   changePassword(@Body() changePasswordDto: ChangePasswordDto, @Req() req) {
     return this.authService.changePassword({
       ...changePasswordDto,
