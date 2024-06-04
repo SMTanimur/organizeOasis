@@ -25,7 +25,6 @@ async function bootstrap() {
         configurationService.WEB_URL,
 
         'http://localhost:3000',
-        'http://localhost:4000',
         'https://accounts.google.com',
       ],
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
