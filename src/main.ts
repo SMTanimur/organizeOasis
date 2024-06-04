@@ -77,6 +77,8 @@ async function bootstrap() {
     app.use(passport.initialize());
     app.use(passport.session());
 
+    app.set("trust proxy", 1);
+
     // app.useGlobalFilters(new NestHttpExceptionFilter(configurationService));
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
