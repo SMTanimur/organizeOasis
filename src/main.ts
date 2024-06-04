@@ -61,7 +61,7 @@ async function bootstrap() {
         cookie: {
           maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
           httpOnly: true,
-          sameSite: 'none', // Use 'none' for cross-site cookies
+          sameSite: process.env.NODE_ENV === 'production' ? 'none':'lax', // Use 'none' for cross-site cookies
           secure: process.env.NODE_ENV === 'production', // Set secure flag in production
         },
         store: new MongoStore({
