@@ -61,11 +61,8 @@ async function bootstrap() {
         cookie: {
           maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
           httpOnly: true,
-          // TODO: Need to check when it's live on the production server
-          // sameSite: ServerConfig.NODE_ENV !== 'production' ? 'none' : 'lax',
-          sameSite: 'lax',
-          // TODO: Enable secure cookie in production
-          secure: false, //|| ServerConfig.NODE_ENV === 'production',
+          sameSite: 'none', // Use 'none' for cross-site cookies
+          secure: process.env.NODE_ENV === 'production', // Set secure flag in production
         },
         store: new MongoStore({
           uri: configurationService.MONGODB_URI,
