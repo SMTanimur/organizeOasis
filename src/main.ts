@@ -15,7 +15,7 @@ const MongoStore = MongoDBStore(session);
 const env = process.env.NODE_ENV || 'dev';
 async function bootstrap() {
   try {
-    const app = await NestFactory.create<NestExpressApplication>(AppModule,{cors: true});
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
     const configurationService =
       app.get<ConfigurationService>(ConfigurationService);
 
