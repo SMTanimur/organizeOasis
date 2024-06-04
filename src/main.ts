@@ -10,11 +10,12 @@ import  MongoDBStore from 'connect-mongodb-session';
 
 import helmet from 'helmet';
 import { ConfigurationService } from './configuration/configuration.service';
+import { NestExpressApplication } from '@nestjs/platform-express';
 const MongoStore = MongoDBStore(session);
 const env = process.env.NODE_ENV || 'dev';
 async function bootstrap() {
   try {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule,{cors: true});
     const configurationService =
       app.get<ConfigurationService>(ConfigurationService);
 
