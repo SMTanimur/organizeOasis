@@ -1,17 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsEnum,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator';
+import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { Document } from 'mongoose';
 
 export enum Status {
   online = 'online',
   offline = 'offline',
 }
-
 export class Node {
   @ApiProperty({ type: String, required: true })
   @Prop({ required: true })
@@ -23,7 +18,7 @@ export class Node {
   @IsString()
   type: string;
 }
-@Schema({ _id: true })
+@Schema({timestamps: true})
 export class Workflow {
   @ApiProperty({ type: String, required: true })
   @Prop({ required: true })
@@ -53,4 +48,5 @@ export class Workflow {
   nodes?: Node[];
 }
 
+export interface WorkflowDocument extends Workflow, Document {}
 export const WorkflowSchema = SchemaFactory.createForClass(Workflow);
