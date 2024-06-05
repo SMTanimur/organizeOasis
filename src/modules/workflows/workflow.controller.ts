@@ -37,7 +37,7 @@ export class WorkflowController {
 
   @ApiOperation({ summary: 'create a New Workflow' })
   @ApiOkResponse({ description: 'Create nice workflow' })
-  @Post()
+  @Post('create')
   async createWorkflow(input: CreateWorkflowDto): Promise<Workflow> {
     return this.workflowService.createWorkflow(input);
   }
