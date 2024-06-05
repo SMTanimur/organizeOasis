@@ -1,3 +1,4 @@
+import { WorkflowModule } from './modules/workflows/workflow.module';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -9,6 +10,7 @@ import { CoreModule } from './core/core.module';
 
 @Module({
   imports: [
+        WorkflowModule, 
     ConfigurationModule,
     DatabaseModule,
     UsersModule,
