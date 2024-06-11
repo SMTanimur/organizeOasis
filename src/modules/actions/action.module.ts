@@ -5,9 +5,13 @@ https://docs.nestjs.com/modules
 */
 
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Action, ActionSchema } from './schema';
 
 @Module({
-    imports: [],
+    imports: [
+        MongooseModule.forFeature([{ name: Action.name, schema: ActionSchema }]),
+    ],
     controllers: [
         ActionController, ],
     providers: [
