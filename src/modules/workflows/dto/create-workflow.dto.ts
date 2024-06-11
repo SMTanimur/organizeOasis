@@ -6,6 +6,5 @@ export class CreateWorkflowDto extends PickType(Workflow, [
   'name',
   'description',
   'status',
-  'nodes',
  
 ]) {}

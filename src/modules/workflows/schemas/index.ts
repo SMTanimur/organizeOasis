@@ -42,10 +42,10 @@ export class Workflow {
   })
   status?: Status;
 
-  @ApiProperty({ type: [Node], required: false })
-  @Prop()
-  @IsOptional()
-  nodes?: Node[];
+
+  
+
+
 }
 
 export interface WorkflowDocument extends Workflow, Document {}
