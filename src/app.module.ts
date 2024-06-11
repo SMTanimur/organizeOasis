@@ -1,3 +1,4 @@
+import { ActionModule } from './modules/actions/action.module';
 import { WorkflowModule } from './modules/workflows/workflow.module';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
@@ -10,13 +11,13 @@ import { CoreModule } from './core/core.module';
 
 @Module({
   imports: [
-        WorkflowModule, 
+    ActionModule,
+    WorkflowModule,
     ConfigurationModule,
     DatabaseModule,
     UsersModule,
     AuthModule,
-    CoreModule
-  
+    CoreModule,
   ],
   controllers: [AppController],
   providers: [AppService],
