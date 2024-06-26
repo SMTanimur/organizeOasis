@@ -19,7 +19,6 @@ async function bootstrap() {
     const configurationService =
       app.get<ConfigurationService>(ConfigurationService);
 
-    // app.use(morgan('common'));
     app.enableCors({
       credentials: true,
       origin: [
