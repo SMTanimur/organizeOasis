@@ -18,7 +18,6 @@ export class WorkflowService {
       return workflow;
       
      } catch (error) {
-      console.log(error);
       throw new BadRequestException(error);
      }
   };

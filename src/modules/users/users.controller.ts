@@ -63,7 +63,6 @@ export class UsersController {
   // @Roles(Role.USER, Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   public async me(@Req() request: Request) {
-    console.log(request)
     const user=await this.usersService.me(request.user);
     delete user.password
     return user
