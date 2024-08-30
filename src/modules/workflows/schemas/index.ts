@@ -1,24 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+
+import {  IsOptional, IsString, MinLength } from 'class-validator';
 import { Document } from 'mongoose';
 
 export enum Status {
   online = 'online',
   offline = 'offline',
 }
-export class Node {
-  @ApiProperty({ type: String, required: true })
-  @Prop({ required: true })
-  @IsString()
-  id: string;
 
-  @ApiProperty({ type: String, required: true })
-  @Prop({ required: true })
-  @IsString()
-  type: string;
-}
-@Schema({timestamps: true})
+@Schema({ timestamps: true })
 export class Workflow {
   @ApiProperty({ type: String, required: true })
   @Prop({ required: true })
@@ -33,19 +24,31 @@ export class Workflow {
   @IsOptional()
   description: string;
 
-  @ApiProperty({ type: Status, required: false })
-  @IsEnum(Status)
+  @ApiProperty({ type: String, required: false })
+  @Prop({ required: false })
+  @IsString()
+  @MinLength(2)
+  @IsOptional()
+  type: string;
+
+
+
+  @ApiProperty({ type: String, required: false })
   @IsOptional()
   @Prop({
-    enum: Status,
-    default: Status.offline,
+   type:String
   })
-  status?: Status;
+  visibility?: string
 
-
-  
-
-
+  @ApiProperty({
+    description: 'A key-value store for dynamic data',
+    type: Object,
+    additionalProperties: true,
+    required: false,
+  })
+  @Prop({ type: Map, of: Object, required: false })
+  @IsOptional()
+  flow: Record<string, any>;
 }
 
 export interface WorkflowDocument extends Workflow, Document {}

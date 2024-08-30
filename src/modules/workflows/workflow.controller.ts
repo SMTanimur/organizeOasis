@@ -2,7 +2,7 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
-import { Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { WorkflowService } from './workflow.service';
 import { RolesGuard } from '../../common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -38,7 +38,7 @@ export class WorkflowController {
   @ApiOperation({ summary: 'create a New Workflow' })
   @ApiOkResponse({ description: 'Create nice workflow' })
   @Post('create')
-  async createWorkflow(input: CreateWorkflowDto): Promise<Workflow> {
+  async createWorkflow(@Body() input: CreateWorkflowDto): Promise<Workflow> {
     return this.workflowService.createWorkflow(input);
   }
 
@@ -47,8 +47,14 @@ export class WorkflowController {
   @ApiOperation({ summary: 'Update Workflow' })
   @ApiOkResponse({ description: 'Create nice workflow' })
   @Patch(':id')
-  async update(@Param('id') id: string, input: CreateWorkflowDto): Promise<Workflow> {
+  async update(@Param('id') id: string, @Body() input: CreateWorkflowDto): Promise<Workflow> {
     return this.workflowService.update(id, input);
+  }
+  @ApiOperation({ summary: 'delete Workflow' })
+  @ApiOkResponse({ description: 'Create nice workflow' })
+  @Delete(':id')
+  async delete(@Param('id') id: string): Promise<{message:string}> {
+    return this.workflowService.delete(id);
   }
 
 

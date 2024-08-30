@@ -5,6 +5,8 @@ import { Workflow } from '../schemas';
 export class CreateWorkflowDto extends PickType(Workflow, [
   'name',
   'description',
-  'status',
+
+  'flow',
+  'visibility'
  
 ]) {}

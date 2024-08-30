@@ -41,4 +41,18 @@ export class WorkflowService {
  
   }
 
+  async delete (id:string): Promise<{ message: string; }> {
+    try {
+      const exit = await this.workflowModel.findById(id)
+      if(!exit) throw new NotFoundException('Workflow not found');
+      await this.workflowModel.findByIdAndDelete(id);
+      return {
+        message:"Workflow deleted successfully"
+      }
+      
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
+  }
+
 }
