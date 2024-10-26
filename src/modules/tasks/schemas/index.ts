@@ -47,14 +47,17 @@ export class Task extends Document {
   assignedTo: Types.ObjectId[];
 
   @Prop({ enum: TaskStatus, default: TaskStatus.NOT_STARTED, required: false })
+  @ApiProperty({ enum: TaskStatus, default: TaskStatus.NOT_STARTED })
   @IsEnum(TaskStatus)
   status: TaskStatus;
 
   @Prop({ enum: TaskPriority, default: TaskPriority.MEDIUM, required: false })
+  @ApiProperty({ enum: TaskPriority, default: TaskPriority.MEDIUM })
   @IsEnum(TaskPriority)
   priority: TaskPriority;
 
   @Prop({ type: Date })
+  @ApiProperty({ type: Date, required: false })
   @IsDate()
   dueDate: Date;
 }

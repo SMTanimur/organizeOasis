@@ -3,6 +3,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { IsNotEmpty, IsString, IsArray, IsEmail, IsMongoId, IsDate } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Optional } from '@nestjs/common';
 
 @Schema()
 export class Invitation {
@@ -56,8 +57,13 @@ export class Organization extends Document {
   owner: Types.ObjectId;
 
   @Prop([{ type: Member }])
-  @ApiProperty({ type: [Member], description: 'List of organization members' })
+  @Optional()
+  @ApiProperty({ type: [Member], description: 'List of organization members', required: false })
   members: Member[];
+
+  @Prop({type:Boolean, default: false})
+  @ApiProperty({ type: Boolean, description: 'Whether the organization is active or not', default: false })
+  isDefault: boolean;
 
   @Prop([{ type: Invitation }])
   @ApiProperty({ type: [Invitation], description: 'List of organization invitations' })
@@ -67,5 +73,5 @@ export class Organization extends Document {
   @ApiProperty({ type: [String], description: 'References to projects under this organization' })
   projects: Types.ObjectId[];
 }
-
+export interface OrganizationDocument extends Organization, Document {}
 export const OrganizationSchema = SchemaFactory.createForClass(Organization);
