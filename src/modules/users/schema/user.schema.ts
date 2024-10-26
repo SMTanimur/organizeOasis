@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-import  bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 import {
   IsArray,
   IsBoolean,
@@ -13,8 +13,8 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-
 import { Provider, Role } from '../../../common/constants';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class User {
@@ -72,9 +72,6 @@ export class User {
   @Prop({ type: String, default: null })
   provider_id: string;
 
-
-
-
   @IsOptional()
   @Prop()
   contact?: string;
@@ -87,13 +84,20 @@ export class User {
   @IsEnum(Role)
   @IsOptional()
   @Prop({
-    enum: [Role.ADMIN,  Role.USER],
+    enum: [Role.ADMIN, Role.USER],
     default: Role.USER,
     type: String,
   })
   role?: string;
 
-
+  @Prop([
+    {
+      organization: { type: Types.ObjectId, ref: 'Organization' },
+      role: String,
+    },
+  ])
+  @IsOptional()
+  organizations?: { organization: Types.ObjectId; role: string }[];
 }
 
 export interface UserDocument extends User {
@@ -103,7 +107,7 @@ export interface UserDocument extends User {
 export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.methods.comparePassword = async function (
-  password: string
+  password: string,
 ): Promise<boolean> {
   const user = this as UserDocument;
   return await bcrypt.compare(password, user.password);
