@@ -1,3 +1,6 @@
+import { ProjectModule } from './modules/projects/project.module';
+import { TaskModule } from './modules/tasks/task.module';
+import { OrganizationModule } from './modules/organization/organization.module';
 import { ActionModule } from './modules/actions/action.module';
 import { WorkflowModule } from './modules/workflows/workflow.module';
 import { Module } from '@nestjs/common';
@@ -11,6 +14,9 @@ import { CoreModule } from './core/core.module';
 
 @Module({
   imports: [
+        ProjectModule, 
+        TaskModule, 
+    OrganizationModule,
     ActionModule,
     WorkflowModule,
     ConfigurationModule,
