@@ -5,9 +5,13 @@ https://docs.nestjs.com/modules
 */
 
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Organization, OrganizationSchema } from './schemas';
 
 @Module({
-    imports: [],
+    imports: [
+        MongooseModule.forFeature([{ name: Organization.name, schema: OrganizationSchema }]),
+    ],
     controllers: [
         OrganizationController, ],
     providers: [
