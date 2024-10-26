@@ -3,6 +3,7 @@ import { UserDocument } from '../../modules/users/schema/user.schema';
 
 
 const getCurrentUserByContext = (context: ExecutionContext): UserDocument => {
+  console.log({context})
   return context.switchToHttp().getRequest().user;
 };
 

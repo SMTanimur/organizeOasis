@@ -16,11 +16,15 @@ export class OrganizationService {
   async create(createOrganizationDto: CreateOrganizationDto): Promise<{message:string}> {
 
     try {
-      const createdOrganization =  await this.organizetionModel.create(createOrganizationDto);
+       await this.organizetionModel.create(createOrganizationDto);
       return { message: 'Organization created successfully.' };
     } catch (error) {
       throw new BadGatewayException(error);
     }
     
+  }
+
+  async getAll(): Promise<Organization[]> {
+    return this.organizetionModel.find({});
   }
 }
