@@ -29,7 +29,6 @@ export class Invitation {
   invitedAt: Date;
 }
 
-
 @Schema()
 export class Member {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })

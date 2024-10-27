@@ -12,7 +12,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 
 import { User, UserDocument } from './schema/user.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { ObjectId, PaginateModel } from 'mongoose';
+import { ObjectId, PaginateModel, Types } from 'mongoose';
 import { UpdateUserPermissionsDto } from './dto/update-permission.dto';
 import { createHash } from '../../utils/hash';
 import { LoginDto } from '../auth/dto/login.dto';
@@ -173,6 +173,13 @@ export class UsersService {
     return await this.userModel.findOneAndUpdate(
       { email },
       { $set: updateUserDto }
+    );
+  }
+
+  async removeOrganizationFromUsers(orgId: string): Promise<void> {
+    await this.userModel.updateMany(
+      { 'organizations.organization': new Types.ObjectId(orgId) },
+      { $pull: { organizations: { organization: new Types.ObjectId(orgId) } } }
     );
   }
 
