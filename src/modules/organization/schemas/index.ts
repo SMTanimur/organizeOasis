@@ -69,7 +69,7 @@ export class Organization extends Document {
   @Prop([{ type: Invitation }])
   @ApiProperty({ type: [Invitation], description: 'List of organization invitations' })
   invitations: Invitation[];
-
+  
   @Prop([{ type: Types.ObjectId, ref: 'Project' }])
   @ApiProperty({ type: [String], description: 'References to projects under this organization' })
   projects: Types.ObjectId[];

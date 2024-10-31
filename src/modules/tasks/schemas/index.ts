@@ -5,7 +5,6 @@ import {
   IsNotEmpty,
   IsString,
   IsEnum,
-  IsMongoId,
   IsArray,
   IsDate,
 } from 'class-validator';
@@ -36,10 +35,6 @@ export class Task extends Document {
   @ApiProperty({ type: String, required: false })
   description: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
-  @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsMongoId()
-  project: Types.ObjectId;
 
   @Prop([{ type: Types.ObjectId, ref: 'User' }])
   @ApiProperty({ type: [Types.ObjectId], required: false })
