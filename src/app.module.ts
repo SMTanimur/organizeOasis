@@ -1,3 +1,4 @@
+import { GroupModule } from './modules/groups/group.module';
 import { ProjectModule } from './modules/projects/project.module';
 import { TaskModule } from './modules/tasks/task.module';
 import { OrganizationModule } from './modules/organization/organization.module';
@@ -14,8 +15,9 @@ import { CoreModule } from './core/core.module';
 
 @Module({
   imports: [
-        ProjectModule, 
-        TaskModule, 
+    GroupModule,
+    ProjectModule,
+    TaskModule,
     OrganizationModule,
     ActionModule,
     WorkflowModule,
