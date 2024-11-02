@@ -7,6 +7,6 @@ export class GroupService {
 
   constructor(
     private readonly groupRepository: GroupRepository
-    ,
+    
   ) {}
 }

@@ -7,6 +7,7 @@ https://docs.nestjs.com/modules
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Task, TaskSchema } from './schemas';
+import { TaskRepository } from './task.repository';
 
 @Module({
   imports: [
@@ -14,6 +15,6 @@ import { Task, TaskSchema } from './schemas';
   ],
   controllers: [TaskController],
   providers: [
-        TaskService, ],
+        TaskService,TaskRepository ],
 })
 export class TaskModule {}
