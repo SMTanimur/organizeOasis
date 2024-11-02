@@ -2,8 +2,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import {  Types } from 'mongoose';
 import { IsNotEmpty, IsString, IsEnum, IsArray, IsDate } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AbstractDocument } from '../../../database/abstract.schema';
+import { Optional } from '@nestjs/common';
 
 enum TaskStatus {
   NOT_STARTED = 'not-started',
@@ -44,6 +45,11 @@ export class Task extends AbstractDocument {
   @ApiProperty({ enum: TaskPriority, default: TaskPriority.MEDIUM })
   @IsEnum(TaskPriority)
   priority: TaskPriority;
+
+  @Prop([{ type: Types.ObjectId, ref: 'User' }])
+  @Optional()
+  @ApiPropertyOptional()
+  watchers: Types.ObjectId[];
 
   @Prop({ type: Date })
   @ApiProperty({ type: Date, required: false })
