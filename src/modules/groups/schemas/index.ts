@@ -3,11 +3,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { Document, Types } from 'mongoose';
 import { IsObjectId } from 'nestjs-object-id';
-
-export type GroupDocument = Group & Document;
+import { AbstractDocument } from '../../../database/abstract.schema';
 
 @Schema({ timestamps: true })
-export class Group {
+export class Group extends AbstractDocument {
   @Prop({ required: true })
   @IsString()
   @ApiProperty({ type: String, description: 'Name of the group' })

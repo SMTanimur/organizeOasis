@@ -1,8 +1,12 @@
-/*
-https://docs.nestjs.com/providers#services
-*/
 
 import { Injectable } from '@nestjs/common';
+import { GroupRepository } from './group.repository';
 
 @Injectable()
-export class GroupService {}
+export class GroupService {
+
+  constructor(
+    private readonly groupRepository: GroupRepository
+    ,
+  ) {}
+}
