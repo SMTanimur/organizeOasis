@@ -6,7 +6,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AbstractDocument } from '../../../database/abstract.schema';
 import { Optional } from '@nestjs/common';
 import { Type } from 'class-transformer';
-import { Group } from '../../groups/schemas';
 import { User } from '../../users/schema/user.schema';
 
 enum TaskStatus {
@@ -45,12 +44,6 @@ export class Task extends AbstractDocument {
   @IsOptional()
   @ApiPropertyOptional({ type: [String], description: 'Users assigned to the task' })
   assignees: User[];
-
-  @Prop({ type: Types.ObjectId, ref: 'Group' ,required:false})
-  @Type(() => Types.ObjectId)
-  @IsOptional()
-  @ApiPropertyOptional({ description: 'Group associated with the task' })
-  group: Group;
 
   @Prop({ required: false })
   @IsDate()

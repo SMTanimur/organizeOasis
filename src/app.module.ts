@@ -1,6 +1,5 @@
+import { ChatModule } from './modules/chats/chat.module';
 
-import { MessageModule } from './modules/messages/message.module';
-import { GroupModule } from './modules/groups/group.module';
 import { ProjectModule } from './modules/projects/project.module';
 import { TaskModule } from './modules/tasks/task.module';
 import { OrganizationModule } from './modules/organization/organization.module';
@@ -14,11 +13,11 @@ import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CoreModule } from './core/core.module';
+import { ChatsGateway } from './modules/chats/chat-gateway';
 
 @Module({
   imports: [
-    MessageModule,
-    GroupModule,
+    ChatModule,
     ProjectModule,
     TaskModule,
     OrganizationModule,
@@ -31,6 +30,6 @@ import { CoreModule } from './core/core.module';
     CoreModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,ChatsGateway],
 })
 export class AppModule {}
