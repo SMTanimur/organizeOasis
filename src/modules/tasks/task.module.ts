@@ -1,8 +1,5 @@
 import { TaskService } from './task.service';
 import { TaskController } from './task.controller';
-/*
-https://docs.nestjs.com/modules
-*/
 
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
