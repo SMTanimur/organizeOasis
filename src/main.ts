@@ -11,8 +11,36 @@ import  MongoDBStore from 'connect-mongodb-session';
 import helmet from 'helmet';
 import { ConfigurationService } from './configuration/configuration.service';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 const MongoStore = MongoDBStore(session);
 const env = process.env.NODE_ENV || 'dev';
+
+
+class CustomSocketAdapter extends IoAdapter {
+  private readonly logger = new Logger('WebSocketAdapter');
+
+  constructor(
+    app: any,
+    private readonly configurationService: ConfigurationService,
+  ) {
+    super(app);
+  }
+
+  createIOServer(port: number, options?: any) {
+    const wsPort =  3334;
+    this.logger.log(`WebSocket Server starting on port: ${wsPort}`);
+
+    const server = super.createIOServer(wsPort, {
+      ...options,
+      cors: {
+        origin: this.configurationService.WEB_URL,
+        credentials: true,
+      },
+    });
+
+    return server;
+  }
+}
 async function bootstrap() {
   try {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -36,6 +64,10 @@ async function bootstrap() {
     app.enableVersioning({
       type: VersioningType.URI,
     });
+
+   // WebSocket Adapter
+   app.useWebSocketAdapter(new CustomSocketAdapter(app, configurationService));
+
 
     // Swagger Setup
     const config = new DocumentBuilder()
