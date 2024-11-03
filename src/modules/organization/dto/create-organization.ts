@@ -5,5 +5,9 @@ import { Organization } from "../schemas";
 export class CreateOrganizationDto  extends PickType(Organization,[
   "name",
   "owner",
-  "isDefault"
+  "isDefault",
+  "description",
+  "logoText",
+  "brandColor",
+  "logo"
 ]){}

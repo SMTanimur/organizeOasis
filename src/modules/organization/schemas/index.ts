@@ -1,7 +1,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { IsNotEmpty, IsString, IsArray, IsEmail, IsMongoId, IsDate, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsArray, IsEmail, IsMongoId, IsDate, IsOptional, IsUrl } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Optional } from '@nestjs/common';
 import { IsObjectId } from 'nestjs-object-id';
@@ -20,13 +20,15 @@ export class Invitation {
 
   @Prop({ required: true })
   @IsString()
+  @IsOptional()
   @ApiProperty({ type: String, description: 'Status of the invitation (e.g., pending, accepted)' })
-  status: string;
+  status?: string;
 
   @Prop({ type: Date, default: Date.now })
+  @IsOptional()
   @IsDate()
   @ApiProperty({ type: Date, description: 'Timestamp when the invitation was sent' })
-  invitedAt: Date;
+  invitedAt?: Date;
 }
 
 @Schema()
@@ -50,6 +52,29 @@ export class Organization extends Document {
   @IsString()
   @ApiProperty({ type: String, description: 'Name of the organization' })
   name: string;
+
+  @Prop({ required: false })
+  @IsString()
+  @ApiProperty({ type: String, description: 'Description of the organization', required: false })
+  description: string;
+
+  @Prop({ required: false })
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ type: String, description: 'Logo text for the organization', required: false })
+  logoText?: string;
+
+  @Prop({ required: false })
+  @IsString()
+  @IsOptional()
+  @ApiProperty({ type: String, description: 'Brand color for the organization', required: false })
+  brandColor?: string;
+
+  @Prop({ required: false })
+  @IsString()
+  @IsOptional() 
+  @ApiProperty({ type: String, description: 'Avatar/logo image URL for the organization', required: false })
+ logo?: string;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   @IsObjectId()
