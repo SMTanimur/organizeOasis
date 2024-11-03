@@ -58,6 +58,18 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return document;
   }
 
+  async findOneAndRemove(filterQuery: FilterQuery<TDocument>) {
+    try {
+      await this.model.findByIdAndDelete(filterQuery, { lean: true });
+      return {
+        message: `${this.model.modelName} successfully removed`
+      }
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
   async upsert(
     filterQuery: FilterQuery<TDocument>,
     document: Partial<TDocument>,
