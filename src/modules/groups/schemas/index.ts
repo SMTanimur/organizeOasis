@@ -17,7 +17,7 @@ export class Group extends AbstractDocument {
   @IsObjectId({ each: true })
   members: Types.ObjectId[];
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   @ApiProperty({ type: String, description: 'Owner ID of the group' })
   @IsObjectId()
   owner: Types.ObjectId;

@@ -1,3 +1,5 @@
+
+import { MessageModule } from './modules/messages/message.module';
 import { GroupModule } from './modules/groups/group.module';
 import { ProjectModule } from './modules/projects/project.module';
 import { TaskModule } from './modules/tasks/task.module';
@@ -15,6 +17,7 @@ import { CoreModule } from './core/core.module';
 
 @Module({
   imports: [
+    MessageModule,
     GroupModule,
     ProjectModule,
     TaskModule,
