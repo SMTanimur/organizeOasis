@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
 import { SortOrder } from '../../../common/dto/generic-conditions.dto';
 import { PaginationArgs } from '../../../common/dto/pagination-args.dto';
 import { Paginator } from '../../../common/dto/paginator.dto';
@@ -29,10 +29,13 @@ export class GetUsersDto extends PaginationArgs {
   @ApiPropertyOptional()
   @IsOptional()
   search?: string;
-  @IsMongoId()
+ 
+
   @ApiPropertyOptional()
   @IsOptional()
-  shop?: string;
+  @IsString()
+  email?: string;
+
   @IsString()
   @ApiPropertyOptional()
   @IsOptional()

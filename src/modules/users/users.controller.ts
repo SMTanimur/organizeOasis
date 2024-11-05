@@ -47,7 +47,6 @@ export class UsersController {
   }
 
   @UseGuards(AuthenticatedGuard)
-  @Roles(Role.ADMIN)
   @Get()
   getAllUsers(@Query() query: GetUsersDto) {
     return this.usersService.getUsers(query);

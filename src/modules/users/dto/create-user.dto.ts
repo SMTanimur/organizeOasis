@@ -8,10 +8,8 @@ export class CreateUserDto extends PickType(User, [
   'password',
   'provider_id',
   'provider',
- 
   'avatar',
   'role',
-
   'email_verified',
   'contact',
  

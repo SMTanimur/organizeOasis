@@ -15,6 +15,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { Provider, Role } from '../../../common/constants';
 import { Types } from 'mongoose';
+import { Organization } from '../../organization/schemas';
+import { IsObjectId } from 'nestjs-object-id';
 
 @Schema({ timestamps: true })
 export class User {
@@ -96,8 +98,10 @@ export class User {
       role: String,
     },
   ])
+  @IsArray({each: true})
+  @IsObjectId({each: true})
   @IsOptional()
-  organizations?: { organization: Types.ObjectId; role: string }[];
+  organizations?: Types.ObjectId[];
 }
 
 export interface UserDocument extends User {
