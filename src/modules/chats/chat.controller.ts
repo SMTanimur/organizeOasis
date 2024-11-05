@@ -68,6 +68,20 @@ export class ChatController {
     return this.chatsService.deleteChat(chatId, user);
   }
 
+  @Get(':organizatonId/searchGroupsOrMembers')
+  @ApiOperation({ summary: 'Search for groups or members' })
+  async searchGroupsOrMembers(
+    @Query('q') query: string,
+    @CurrentUser() user: any,
+    @Param('organizationId') organizationId: string,
+  ) {
+    return this.chatsService.searchMembersAndGroups(
+      query,
+      user,
+      organizationId,
+    );
+  }
+
   @Get(':chatId/messages')
   @ApiOperation({ summary: 'Get chat messages' })
   async getChatMessages(
