@@ -9,6 +9,7 @@ import { Type } from "class-transformer";
 import { Organization } from "../../organization/schemas";
 import { Project } from "src/modules/projects/schemas";
 import { Message } from "./message";
+import { IsObjectId } from "nestjs-object-id";
 
 
 
@@ -46,7 +47,7 @@ export class ChatMember extends Document {
     type: () => User 
   })
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  user: UserDocument
+  user:  Types.ObjectId;
 
   @ApiProperty({ 
     description: 'Member role',
@@ -56,6 +57,14 @@ export class ChatMember extends Document {
   @IsEnum(ChatMemberRole)
   @Prop({ type: String, enum: ChatMemberRole, default: ChatMemberRole.MEMBER })
   role: ChatMemberRole;
+
+  @ApiProperty({
+    type:Types.ObjectId
+  })
+  @IsObjectId()
+  @Prop({ type: Types.ObjectId, ref: 'Chat' })
+  chat: Types.ObjectId;
+
 
   @ApiProperty({ 
     description: 'Join date',

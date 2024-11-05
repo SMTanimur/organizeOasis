@@ -16,7 +16,6 @@ import { Organization, OrganizationSchema } from '../organization/schemas';
     MongooseModule.forFeature([
       { name: Chat.name, schema: ChatSchema },
       { name: Message.name, schema: MessageSchema },
-      { name: ChatMember.name, schema: ChatMemberSchema },
       {name:Organization.name, schema:OrganizationSchema},
       {name:User.name, schema:UserSchema},
 

@@ -56,7 +56,7 @@ export interface GroupResult {
   id: string;
   name: string;
   members: {
-    userId: string;
+    _id: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -67,7 +67,7 @@ export interface GroupResult {
 
 // Interface for a Member result
 export interface MemberResult {
-  id: string;
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
