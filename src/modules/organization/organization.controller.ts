@@ -21,7 +21,7 @@ import {
 import { Organization } from './schemas';
 import { OrganizationService } from './organization.service';
 import { CreateOrganizationDto } from './dto/create-organization';
-import {  Role, UserDto } from '../../common';
+import { Role, UserDto } from '../../common';
 import { CurrentUser } from '../../common/decorator';
 import { Types } from 'mongoose';
 import { UpdateOrganizationDTO } from './dto/update-organization';
@@ -95,14 +95,13 @@ export class OrganizationController {
     return await this.organizationService.delete(id);
   }
 
-  @Put(':id/invitations')
+  @Post('invitations')
   @ApiOperation({ summary: 'Send an invitation to a user' })
   @ApiResponse({ status: 200, description: 'Invitation sent successfully' })
-  sendInvitation(
-    @Param('id') id: string,
-    @Body() invitationDto: InvitationDto,
-  ) {
-    return this.organizationService.inviteUser(id, invitationDto);
+  sendInvitation(@Body() invitationDto: InvitationDto) {
+    invitationDto.invitedBy = new Types.ObjectId(invitationDto.invitedBy);
+    invitationDto.organization = new Types.ObjectId(invitationDto.organization);
+    return this.organizationService.inviteUser(invitationDto);
   }
 
   @Get('invitations/pending')
@@ -112,11 +111,11 @@ export class OrganizationController {
     description:
       'Returns all organizations where the user has pending invitations',
   })
-  getPendingInvitations(@CurrentUser('email') userEmail: string) {
-    return this.organizationService.getPendingInvitations(userEmail);
+  getPendingInvitations(@CurrentUser() user: UserDto) {
+    return this.organizationService.getPendingInvitations(user.email);
   }
 
-  @Post(':id/invitations/respond')
+  @Put(':id/invitations/respond')
   @ApiOperation({ summary: 'Accept or reject an organization invitation' })
   @ApiResponse({
     status: 200,
@@ -125,11 +124,11 @@ export class OrganizationController {
   respondToInvitation(
     @Param('id') id: string,
     @Body() responseDto: InvitationResponseDto,
-    @CurrentUser('email') userEmail: string,
+    @CurrentUser() user: UserDto,
   ) {
     return this.organizationService.respondToInvitation(
       id,
-      userEmail,
+      user,
       responseDto.response,
     );
   }

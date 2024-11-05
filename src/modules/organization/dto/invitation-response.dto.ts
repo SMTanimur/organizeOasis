@@ -16,4 +16,4 @@ export class InvitationResponseDto {
   response: InvitationResponse;
 }
 
-export class InvitationDto extends PickType(Invitation,['email','invitedAt','status','invitedBy']){}
+export class InvitationDto extends PickType(Invitation,['email','invitedAt','status','invitedBy',"organization"]){}
