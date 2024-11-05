@@ -12,6 +12,9 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ChatMemberRole, ChatType, ChatVisibility } from '../chat.enum';
+import { Project } from '../../projects/schemas';
+import { Organization } from '../../organization/schemas';
+import { Types } from 'mongoose';
 
 
 export class ChatSettingsDto {
@@ -64,6 +67,18 @@ export class CreateChatDto {
   @ValidateNested()
   @Type(() => ChatSettingsDto)
   settings?: ChatSettingsDto;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => Project)
+  project?: Types.ObjectId;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => Organization)
+  organization?: Types.ObjectId;
 }
 
 export class UpdateChatDto {

@@ -8,20 +8,22 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UsersService } from '../users/users.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Chat, ChatMember } from './schemas';
+import { Chat, ChatDocument, ChatMember } from './schemas';
 import { Message } from './schemas/message';
 import { AddMembersDto, CreateChatDto, UpdateChatDto } from './dto/chat.dto';
 import { ChatMemberRole, ChatType } from './chat.enum';
-import { IChatQuery, IMessageQuery } from './interfaces';
+import { GroupResult, IChatQuery, IMessageQuery, MemberResult, SearchResult } from './interfaces';
 import { CreateMessageDto, UpdateMessageDto } from './dto/message.dto';
+import { User, UserDocument } from '../users/schema/user.schema';
 
 @Injectable()
 export class ChatService {
   
   constructor(
-    @InjectModel(Chat.name) private chatModel: Model<Chat>,
+    @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
     @InjectModel(Message.name) private messageModel: Model<Message>,
     @InjectModel(ChatMember.name) private chatMemberModel: Model<ChatMember>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
     // private readonly usersService: UsersService,
     // private readonly filesService: FilesService,
     private readonly eventEmitter: EventEmitter2,
@@ -71,6 +73,71 @@ export class ChatService {
       message: 'Chat created successfully',
     };
   }
+
+
+    // Method to search for members and groups using a single search parameter
+    async searchMembersAndGroups(
+      searchTerm: string, 
+      userId: string, 
+      organizationId: string
+    ): Promise<SearchResult[]> {
+      const searchRegex = new RegExp(searchTerm, 'i'); // Case-insensitive regex for search
+  
+      // Find all groups the user has created or joined within the organization
+      const groups = await this.chatModel.find({
+        organization: organizationId,
+        $or: [
+          { creator: userId }, // User is the creator of the group
+          { 'members.user': userId }, // User is a member of the group
+        ],
+        name: { $regex: searchRegex } // Search by group name
+      }).populate('members.user', 'firstName lastName email avatar'); // Populate member details
+  
+      // Transform groups into GroupResult format with type
+      const groupResults: GroupResult[] = groups.map(group => ({
+        id: group._id.toString(),
+        name: group.name,
+        members: group.members.map(member => ({
+          userId: member.user as unknown as string,
+          firstName: member.user.firstName,
+          lastName: member.user.lastName,
+          email: member.user.email,
+          avatar: member.user.avatar,
+        })),
+        type: 'Group' // Specify type as 'Group'
+      }));
+  
+      // Find all members of the organization matching the search term
+      const members = await this.userModel.find({
+        organization: organizationId,
+        $or: [
+          { firstName: { $regex: searchRegex } }, 
+          { lastName: { $regex: searchRegex } }, 
+        ],
+      }).select('firstName lastName email avatar'); // Select necessary fields
+  
+      // Transform members into MemberResult format with type
+      const memberResults: MemberResult[] = members.map(member => ({
+        id: member._id.toString(),
+        firstName: member.firstName,
+        lastName: member.lastName,
+        email: member.email,
+        avatar: member.avatar,
+        type: 'User' // Specify type as 'User'
+      }));
+  
+      // Combine groupResults and memberResults into a single array
+      const combinedResults: SearchResult[] = [...groupResults, ...memberResults];
+  
+      // Shuffle the combined array to return results randomly
+      for (let i = combinedResults.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [combinedResults[i], combinedResults[j]] = [combinedResults[j], combinedResults[i]];
+      }
+  
+      return combinedResults;
+    }
+  
 
   // remove mamber from chat
   async removeMember(chatId: string, userId: string, user: any) {

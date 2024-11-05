@@ -7,6 +7,7 @@ import { Chat, ChatMember, ChatMemberSchema, ChatSchema } from './schemas';
 import { Message, MessageSchema } from './schemas/message';
 import { ChatsGateway } from './chat-gateway';
 import { ChatSubscriber } from './chat-subscriber';
+import { User, UserSchema } from '../users/schema/user.schema';
 
 
 @Module({
@@ -15,6 +16,8 @@ import { ChatSubscriber } from './chat-subscriber';
       { name: Chat.name, schema: ChatSchema },
       { name: Message.name, schema: MessageSchema },
       { name: ChatMember.name, schema: ChatMemberSchema },
+      {name:User.name, schema:UserSchema},
+
     ]),
     EventEmitterModule.forRoot({
       // Global configuration for events
