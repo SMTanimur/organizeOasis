@@ -18,7 +18,6 @@ import * as bcrypt from 'bcryptjs';
 
 import { ConfigurationService } from '../../configuration/configuration.service';
 
-
 import { pick } from 'lodash';
 import { OAuth2Client } from 'google-auth-library';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -31,11 +30,12 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly configurationService: ConfigurationService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async validateUser(loginDto: LoginDto): Promise<any> {
+    console.log(loginDto);
     return await this.usersService.validateUser(loginDto);
   }
 
@@ -43,10 +43,12 @@ export class AuthService {
     user: object;
     message: string;
   }> {
-    const { email, password, role = 'customer' } = loginDto;
+    const { email, password, role = 'user' } = loginDto;
+
+    console.log(email, role);
     const exitUser = await this.usersService.findOneByEmail(email);
     if (!exitUser) throw new NotFoundException('User not found');
-    const user = await this.usersService.findUserOne({ email, role });
+    const user = await this.usersService.findUserOne({ email });
 
     if (!user)
       throw new UnprocessableEntityException(
@@ -62,18 +64,12 @@ export class AuthService {
     }
 
     const expires = new Date();
-    expires.setMilliseconds(
-      expires.getMilliseconds() +
-        ms("10h"),
-    );
+    expires.setMilliseconds(expires.getMilliseconds() + ms('10h'));
 
     const tokenPayload: TokenPayload = {
-     email,
-     role
+      email,
+      role,
     };
-   
-
-  
 
     const isValidPassword = await user.comparePassword(password);
 
@@ -93,10 +89,9 @@ export class AuthService {
         'role',
       ]);
 
-      
       return {
         // token,
-  
+
         user: userInfo,
         message: 'Welcome back! 🎉',
       };
@@ -140,7 +135,7 @@ export class AuthService {
   async changePassword(changePasswordInput: ChangePasswordDto) {
     const isValidPass = await bcrypt.compare(
       changePasswordInput.oldPassword,
-      changePasswordInput.user?.password
+      changePasswordInput.user?.password,
     );
     if (isValidPass) {
       const password = await bcrypt.hash(changePasswordInput.newPassword, 10);
@@ -155,7 +150,7 @@ export class AuthService {
     } else {
       throw new HttpException(
         'Unable to change password',
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
   }

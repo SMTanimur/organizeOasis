@@ -9,5 +9,6 @@ export class CreateOrganizationDto  extends PickType(Organization,[
   "description",
   "logoText",
   "brandColor",
-  "logo"
+  "logo",
+ 
 ]){}

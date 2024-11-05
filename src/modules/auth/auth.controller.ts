@@ -37,8 +37,6 @@ import { TokenPayload } from 'src/types/jwt-payload.type';
 import { Response } from 'express';
 import { CustomAuthGuard } from './guards/custom-auth.guard';
 
-
-
 @ApiTags('Auth')
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -48,33 +46,28 @@ export class AuthController {
     public readonly configurationService: ConfigurationService,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
- 
-
   ) {}
 
   @ApiOperation({ summary: 'Register New User' })
   @ApiOkResponse({ description: 'Register user' })
   @Post('register')
-  async register(@Body() createUserDto: CreateUserDto,@Session() session: any) {
+  async register(
+    @Body() createUserDto: CreateUserDto,
+    @Session() session: any,
+  ) {
     const data = await this.usersService.create(createUserDto);
-    await this.usersService.updateByEmail(data.email, {
+    await this.usersService.updateByEmail(data.user.email, {
       email_verified: true,
     });
 
-    
-
-   
     const user = pick(data, ['_id', 'email', 'name', 'role']);
-   
+
     session.passport = { user };
-   
+
     return {
       message: `Welcome to ! Orga 🎉`,
       user: user,
-    
-   
     };
-   
   }
 
   // @ApiOperation({ summary: 'Activate user account' })
@@ -107,14 +100,17 @@ export class AuthController {
   @ApiOperation({ summary: 'Redirects user to client url after login' })
   @UseGuards(CustomAuthGuard)
   @Post('google')
-  async loginWithGoogle(@Body('credential') credential: string,@Session() session: any) {
+  async loginWithGoogle(
+    @Body('credential') credential: string,
+    @Session() session: any,
+  ) {
     try {
       const user = await this.authService.authenticateWithGoogle(credential);
       session.passport = { user };
-      return { user , message:`Welcome to`};
+      return { user, message: `Welcome to` };
     } catch (error) {
       throw new BadRequestException(
-        'User with this email might already exist.'
+        'User with this email might already exist.',
       );
     }
   }
@@ -140,9 +136,9 @@ export class AuthController {
   @UseGuards(CustomAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Body() _body: LoginDto,    @Req() req,) {
-     await this.authService.validateLogin(_body);
-     return { message: 'Welcome back! 🎉', user: req.user };
+  async login(@Body() _body: LoginDto, @Req() req) {
+    await this.authService.validateLogin(_body);
+    return { message: 'Welcome back! 🎉', user: req.user };
   }
 
   @ApiOperation({ summary: 'User Logout Attempt' })

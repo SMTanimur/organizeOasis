@@ -1,11 +1,13 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsBoolean, IsEnum, IsOptional, IsString, ValidateNested } from "class-validator";
-import { User } from "../../users/schema/user.schema";
+import { User, UserDocument } from "../../users/schema/user.schema";
 import { Document, Types } from "mongoose";
 import { ChatMemberRole, ChatType, ChatVisibility } from "../chat.enum";
-import { AbstractDocument } from "../../../database/abstract.schema";
+
 import { Type } from "class-transformer";
+import { Organization } from "../../organization/schemas";
+import { Project } from "src/modules/projects/schemas";
 
 
 
@@ -43,7 +45,7 @@ export class ChatMember extends Document {
     type: () => User 
   })
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  user: User;
+  user: UserDocument
 
   @ApiProperty({ 
     description: 'Member role',
@@ -141,6 +143,22 @@ export class Chat extends Document {
   members: ChatMember[];
 
   @ApiProperty({ 
+    description: 'Chat organization',
+    type: () => Organization 
+  })
+  @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
+  organization: Organization;
+
+
+  @ApiPropertyOptional({ 
+    description: 'Chat project',
+    type: () => Project 
+  })
+  @IsOptional()
+  @Prop({ type: Types.ObjectId, ref: 'Project' })
+  project?: Project;
+
+  @ApiProperty({ 
     description: 'Chat settings',
     type: ChatSettings 
   })
@@ -167,6 +185,7 @@ export class Chat extends Document {
   isArchived: boolean;
 }
 
+export type ChatDocument = Chat & Document;
 export const ChatSchema = SchemaFactory.createForClass(Chat);
 
 // After ChatSchema definition

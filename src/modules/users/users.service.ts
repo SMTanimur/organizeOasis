@@ -63,17 +63,14 @@ export class UsersService {
      
   }
 
-  async create(createUserDto: CreateUserDto): Promise<any> {
+  async create(createUserDto: CreateUserDto): Promise<{
+    user: UserDocument;
+    message: string;
+  }> {
     const user = {
       ...createUserDto,
     };
-    // const createUserData = {
-    //   firstName: user.firstName,
-    //   lastName: user.lastName,
-    //   email: user.email,
-    //   password: user.password,
-    //   profile: user.profile,
-    // };
+  
     const userRegistered = await this.userModel.findOne({
       email: user.email,
     });
@@ -81,8 +78,13 @@ export class UsersService {
       const userData = new this.userModel(user);
       const password = await createHash(user.password);
       userData.password = password;
-      return await userData.save();
+      await userData.save();
 
+      return {
+        message: 'User created successfully',
+        user: userData,
+      }
+     
       
     } else {
       throw new HttpException('Email is already taken.', HttpStatus.CONFLICT);
@@ -91,26 +93,17 @@ export class UsersService {
 
   async getUsers({
     search,
-    shop,
+    email,
     roles,
     limit,
     page,
     orderBy,
     sortedBy,
   }: GetUsersDto) {
-    return await this.userModel.paginate(
-      {
-        ...(search ? { name: { $regex: search, $options: 'i' } } : {}),
-        ...(shop ? { shop: shop } : {}),
-        ...(roles ? { roles: roles } : {}),
-      },
-      {
-        limit,
-        page,
-        populate: ['addresses'],
-        sort: { [orderBy]: sortedBy === 'asc' ? 1 : -1 },
-      }
-    );
+    return await this.userModel.find({
+      ...(search ? { name: { $regex: search, $options: 'i' } } : {}),
+      ...(email ? { email: { $regex: email, $options: 'i' } } : {})
+    });
   }
 
   async findOne(id: string) {
@@ -132,17 +125,17 @@ export class UsersService {
   }
 
   async validateUser(loginDto: LoginDto) {
-    const { email, password, role = 'customer' } = loginDto;
+    const { email, password, role = 'user' } = loginDto;
 
-    const user = await this.userModel.findOne({ email, role });
+    const user = await this.userModel.findOne({ email });
 
     if (!user) throw new NotFoundException('There is no user with this email.');
 
     if (!(await user.comparePassword(password))) {
       throw new UnauthorizedException('The password you entered is incorrect.');
     }
-    if (user.role !== role)
-      throw new UnauthorizedException('You are not authorized to login.');
+    // if (user.role !== role)
+    //   throw new UnauthorizedException('You are not authorized to login.');
 
     return pick(user.toJSON(), ['_id', 'addresses', 'email', 'name', 'role']);
   }
