@@ -15,6 +15,8 @@ import { ChatMemberRole, ChatType, ChatVisibility } from '../chat.enum';
 import { Project } from '../../projects/schemas';
 import { Organization } from '../../organization/schemas';
 import { Types } from 'mongoose';
+import { Message } from '../schemas/message';
+import { IsObjectId } from 'nestjs-object-id';
 
 
 export class ChatSettingsDto {
@@ -35,9 +37,25 @@ export class ChatSettingsDto {
   messageRetention: number;
 }
 
+export class ChatMemberDto {
+  @ApiProperty({ type: String })
+  @IsObjectId()
+  user: Types.ObjectId;
+
+  @ApiProperty({ enum: ChatMemberRole })
+  @IsEnum(ChatMemberRole)
+  role: ChatMemberRole;
+
+  @ApiPropertyOptional({type:Date})
+  @IsOptional()
+  joinedAt:Date
+  
+}
+
 export class CreateChatDto {
-  @ApiProperty({ minLength: 2, maxLength: 100 })
+  @ApiPropertyOptional({ minLength: 2, maxLength: 100 })
   @IsString()
+  @IsOptional()
   @MinLength(2)
   @MaxLength(100)
   name: string;
@@ -56,11 +74,11 @@ export class CreateChatDto {
   @IsEnum(ChatVisibility)
   visibility: ChatVisibility;
 
-  @ApiProperty({ type: [String] })
-  @IsArray()
+  @ApiProperty({ type: [ChatMemberDto] })
   @ArrayMinSize(1)
-  @IsString({ each: true })
-  members: string[];
+  @Type(() => ChatMemberDto)
+  @ValidateNested({each:true})
+  members: ChatMemberDto[];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -74,10 +92,9 @@ export class CreateChatDto {
   @Type(() => Project)
   project?: Types.ObjectId;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @IsOptional()
-  @ValidateNested()
-  @Type(() => Organization)
+  @IsObjectId()
   organization?: Types.ObjectId;
 }
 
@@ -105,6 +122,10 @@ export class UpdateChatDto {
   @ValidateNested()
   @Type(() => ChatSettingsDto)
   settings?: ChatSettingsDto;
+
+  @ApiProperty({ description: 'Last message sent in the chat', type: () => Types.ObjectId })
+  @IsObjectId()
+  lastMessage?: Types.ObjectId;
 }
 
 

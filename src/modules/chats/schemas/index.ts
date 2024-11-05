@@ -8,6 +8,7 @@ import { ChatMemberRole, ChatType, ChatVisibility } from "../chat.enum";
 import { Type } from "class-transformer";
 import { Organization } from "../../organization/schemas";
 import { Project } from "src/modules/projects/schemas";
+import { Message } from "./message";
 
 
 
@@ -60,6 +61,7 @@ export class ChatMember extends Document {
     description: 'Join date',
     type: Date 
   })
+  @IsOptional()
   @Prop({ type: Date, default: Date.now })
   joinedAt: Date;
 }
@@ -69,20 +71,21 @@ export const ChatMemberSchema = SchemaFactory.createForClass(ChatMember);
 
 @Schema({ timestamps: true })
 export class Chat extends Document {
-  @ApiProperty({ 
+  @ApiPropertyOptional({ 
     description: 'Chat name',
     example: 'Marketing Team',
     minLength: 2,
     maxLength: 100 
   })
+  @IsOptional()
   @IsString()
   @Prop({ 
-    required: true,
+    required: false,
     minlength: 2,
     maxlength: 100,
     trim: true 
   })
-  name: string;
+  name?: string;
 
   @ApiPropertyOptional({ 
     description: 'Chat description',
@@ -183,6 +186,11 @@ export class Chat extends Document {
   @IsBoolean()
   @Prop({ default: false })
   isArchived: boolean;
+
+  @ApiProperty({ description: 'Last message sent in the chat', type: () => Types.ObjectId })
+  @IsOptional()
+  @Prop({ type: Types.ObjectId, ref: 'Message', default: null })
+  lastMessage?: Message; // Add this field
 }
 
 export type ChatDocument = Chat & Document;

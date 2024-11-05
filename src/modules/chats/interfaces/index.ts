@@ -1,3 +1,4 @@
+import { Document, Types } from "mongoose";
 import { User } from "../../users/schema/user.schema";
 import { ChatMemberRole, ChatType, ChatVisibility, MessageType } from "../chat.enum";
 
@@ -72,6 +73,17 @@ export interface MemberResult {
   email: string;
   avatar?: string;
   type: 'User'; 
+}
+
+// User Interface
+export interface IUser extends Document {
+  _id: Types.ObjectId
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar?: string; // Optional field for user avatar URL
+  createdAt: Date; // Date the user was created
+  updatedAt: Date; // Date the user was last updated
 }
 
 // Combined result type

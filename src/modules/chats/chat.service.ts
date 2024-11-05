@@ -12,36 +12,46 @@ import { Chat, ChatDocument, ChatMember } from './schemas';
 import { Message } from './schemas/message';
 import { AddMembersDto, CreateChatDto, UpdateChatDto } from './dto/chat.dto';
 import { ChatMemberRole, ChatType } from './chat.enum';
-import { GroupResult, IChatQuery, IMessageQuery, MemberResult, SearchResult } from './interfaces';
+import {
+  GroupResult,
+  IChatQuery,
+  IMessageQuery,
+  IUser,
+  MemberResult,
+  SearchResult,
+} from './interfaces';
 import { CreateMessageDto, UpdateMessageDto } from './dto/message.dto';
 import { User, UserDocument } from '../users/schema/user.schema';
+import { MemberRole, Organization, OrganizationDocument } from '../organization/schemas';
+import { UserDto } from '../../common';
 
 @Injectable()
 export class ChatService {
-  
   constructor(
     @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
     @InjectModel(Message.name) private messageModel: Model<Message>,
     @InjectModel(ChatMember.name) private chatMemberModel: Model<ChatMember>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Organization.name)
+    private organizationModel: Model<OrganizationDocument>,
     // private readonly usersService: UsersService,
     // private readonly filesService: FilesService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async createChat(createChatDto: CreateChatDto, user: any) {
+  async createChat(createChatDto: CreateChatDto, user: UserDto) {
     const { members, type } = createChatDto;
 
     // Validate members
-    if (type === ChatType.DIRECT && members.length !== 1) {
-      throw new BadRequestException(
-        'Direct chat must have exactly one other member',
-      );
-    }
+    // if (type === ChatType.DIRECT && members.length !== 1) {
+    //   throw new BadRequestException(
+    //     'Direct chat must have exactly one other member',
+    //   );
+    // }
 
     // Check if direct chat already exists
     if (type === ChatType.DIRECT) {
-      const existingChat = await this.findDirectChat(user.id, members[0]);
+      const existingChat = await this.findDirectChat(user._id.toString(), members[0].user.toString());
       if (existingChat) {
         return existingChat;
       }
@@ -50,7 +60,7 @@ export class ChatService {
     // Create chat
     const chat = new this.chatModel({
       ...createChatDto,
-      creator: user.id,
+      creator: user._id,
     });
     await chat.save();
 
@@ -58,7 +68,7 @@ export class ChatService {
     const memberDocs = [
       {
         chat: chat._id,
-        user: user.id,
+        user: user._id,
         role: ChatMemberRole.ADMIN,
       },
       ...members.map((memberId) => ({
@@ -74,74 +84,82 @@ export class ChatService {
     };
   }
 
+  // Method to search for members and groups using a single search parameter
+  async searchMembersAndGroups(
+    searchTerm: string,
+    userId: string,
+    organizationId: string,
+  ): Promise<SearchResult[]> {
+    const searchRegex = new RegExp(searchTerm, 'i'); // Case-insensitive regex for search
 
-    // Method to search for members and groups using a single search parameter
-    async searchMembersAndGroups(
-      searchTerm: string, 
-      userId: string, 
-      organizationId: string
-    ): Promise<SearchResult[]> {
-      const searchRegex = new RegExp(searchTerm, 'i'); // Case-insensitive regex for search
-  
-      // Find all groups the user has created or joined within the organization
-      const groups = await this.chatModel.find({
+    // Find all groups the user has created or joined within the organization
+    const groups = await this.chatModel
+      .find({
         organization: organizationId,
         $or: [
           { creator: userId }, // User is the creator of the group
           { 'members.user': userId }, // User is a member of the group
         ],
-        name: { $regex: searchRegex } // Search by group name
-      }).populate('members.user', 'firstName lastName email avatar'); // Populate member details
-  
-      // Transform groups into GroupResult format with type
-      const groupResults: GroupResult[] = groups.map(group => ({
-        id: group._id.toString(),
-        name: group.name,
-        members: group.members.map(member => ({
-          userId: member.user as unknown as string,
-          firstName: member.user.firstName,
-          lastName: member.user.lastName,
-          email: member.user.email,
-          avatar: member.user.avatar,
-        })),
-        type: 'Group' // Specify type as 'Group'
-      }));
-  
-      // Find all members of the organization matching the search term
-      const members = await this.userModel.find({
-        organization: organizationId,
-        $or: [
-          { firstName: { $regex: searchRegex } }, 
-          { lastName: { $regex: searchRegex } }, 
-        ],
-      }).select('firstName lastName email avatar'); // Select necessary fields
-  
-      // Transform members into MemberResult format with type
-      const memberResults: MemberResult[] = members.map(member => ({
-        id: member._id.toString(),
-        firstName: member.firstName,
-        lastName: member.lastName,
-        email: member.email,
-        avatar: member.avatar,
-        type: 'User' // Specify type as 'User'
-      }));
-  
-      // Combine groupResults and memberResults into a single array
-      const combinedResults: SearchResult[] = [...groupResults, ...memberResults];
-  
-      // Shuffle the combined array to return results randomly
-      for (let i = combinedResults.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [combinedResults[i], combinedResults[j]] = [combinedResults[j], combinedResults[i]];
-      }
-  
-      return combinedResults;
+        name: { $regex: searchRegex }, // Search by group name
+      })
+      .populate('members.user', 'firstName lastName email avatar'); // Populate member details
+
+    // Transform groups into GroupResult format with type
+    const groupResults: GroupResult[] = groups.map((group) => ({
+      id: group._id.toString(),
+      name: group.name,
+      members: group.members.map((member) => ({
+        userId: member.user as unknown as string,
+        firstName: member.user.firstName,
+        lastName: member.user.lastName,
+        email: member.user.email,
+        avatar: member.user.avatar,
+      })),
+      type: 'Group', // Specify type as 'Group'
+    }));
+    // Retrieve the organization and populate its members
+    const organization = await this.organizationModel
+      .findById(organizationId)
+      .populate('members.user', 'firstName lastName email avatar');
+
+    // Filter members by firstName or lastName using the searchRegex
+    const filteredMembers = organization.members.filter(
+      (member: any) => {
+        const user = member.user as IUser;
+        return searchRegex.test(user.firstName) || searchRegex.test(user.lastName);
+      },
+    ).map((member: any) => ({
+      ...member,
+      user: member.user as IUser,
+    }));
+
+    // Transform filtered members into MemberResult format with type
+    const memberResults: MemberResult[] = filteredMembers.map((member) => ({
+      id: member.user._id.toString(),
+      firstName: member.user.firstName,
+      lastName: member.user.lastName,
+      email: member.user.email,
+      avatar: member.user.avatar,
+      type: 'User', // Specify type as 'User'
+    }));
+
+    // Combine groupResults and memberResults into a single array
+    const combinedResults: SearchResult[] = [...groupResults, ...memberResults];
+
+    // Shuffle the combined array to return results randomly
+    for (let i = combinedResults.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [combinedResults[i], combinedResults[j]] = [
+        combinedResults[j],
+        combinedResults[i],
+      ];
     }
-  
+
+    return combinedResults;
+  }
 
   // remove mamber from chat
   async removeMember(chatId: string, userId: string, user: any) {
-   
     try {
       const member = await this.validateChatMember(chatId, userId);
       if (member.role !== ChatMemberRole.ADMIN) {
@@ -159,15 +177,17 @@ export class ChatService {
   }
 
   //
-async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
+  async markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
     try {
       const member = await this.validateChatMember(chatId, id);
       if (member.role !== ChatMemberRole.ADMIN) {
         throw new ForbiddenException('Only admins can mark messages as read');
       }
-      
-      await this.messageModel.updateMany({ _id: { $in: messageIds }, chat: chatId }, { $set: { readBy: id } });
 
+      await this.messageModel.updateMany(
+        { _id: { $in: messageIds }, chat: chatId },
+        { $set: { readBy: id } },
+      );
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -182,7 +202,6 @@ async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
     return chat;
   }
 
-   
   // get user chats
   async getUserChats(userId: string, query: IChatQuery) {
     const { page = 1, limit = 20, type, search, visibility } = query;
@@ -363,7 +382,6 @@ async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
       const message = await this.messageModel.findById(messageId);
       if (!message) {
         throw new NotFoundException('Message not found');
-
       }
       await this.messageModel.deleteOne({ _id: messageId });
 
@@ -375,7 +393,7 @@ async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
     }
   }
 
- async 
+  async;
 
   async addMembers(chatId: string, addMembersDto: AddMembersDto, user: any) {
     const { userIds, role = ChatMemberRole.MEMBER } = addMembersDto;
@@ -412,7 +430,7 @@ async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
     };
   }
 
- public async validateChatMember(chatId: string, userId: string) {
+  public async validateChatMember(chatId: string, userId: string) {
     const member = await this.chatMemberModel.findOne({
       chat: chatId,
       user: userId,
