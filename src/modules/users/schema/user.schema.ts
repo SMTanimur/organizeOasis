@@ -11,13 +11,16 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { Provider, Role } from '../../../common/constants';
 import { Types } from 'mongoose';
-import { Organization } from '../../organization/schemas';
 import { IsObjectId } from 'nestjs-object-id';
 
+export enum STATUS {
+  ONLINE = 'online',
+  OFFLINE = 'offline',
+}
 @Schema({ timestamps: true })
 export class User {
   @IsString()
@@ -98,10 +101,20 @@ export class User {
       role: String,
     },
   ])
-  @IsArray({each: true})
-  @IsObjectId({each: true})
+  @IsArray({ each: true })
+  @IsObjectId({ each: true })
   @IsOptional()
   organizations?: Types.ObjectId[];
+
+  @ApiPropertyOptional({ type: String, enum: STATUS })
+  @IsEnum(STATUS)
+  @IsOptional()
+  @Prop({ type: String, enum: STATUS, default: STATUS.OFFLINE })
+  connection_status?: STATUS;
+
+  @ApiPropertyOptional({ type: Date })
+  @Prop({ type: Date })
+  last_seen?: Date;
 }
 
 export interface UserDocument extends User {

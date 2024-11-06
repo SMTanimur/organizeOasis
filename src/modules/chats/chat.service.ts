@@ -21,13 +21,14 @@ import {
   SearchResult,
 } from './interfaces';
 import { CreateMessageDto, UpdateMessageDto } from './dto/message.dto';
-import { User, UserDocument } from '../users/schema/user.schema';
+import { STATUS, User, UserDocument } from '../users/schema/user.schema';
 import {
   MemberRole,
   Organization,
   OrganizationDocument,
 } from '../organization/schemas';
 import { UserDto } from '../../common';
+import { update } from 'lodash';
 
 @Injectable()
 export class ChatService {
@@ -272,6 +273,8 @@ export class ChatService {
                   lastName: '$memberDetails.lastName',
                   email: '$memberDetails.email',
                   avatar: '$memberDetails.avatar',
+                  connection_status: '$memberDetails.connection_status',
+                  last_seen: '$memberDetails.last_seen',
                 },
               },
             },
@@ -360,6 +363,8 @@ export class ChatService {
                 email: '$lastMessageSenderDetails.email',
                 avatar: '$lastMessageSenderDetails.avatar',
               },
+              createdAt: '$lastMessageDetails.createdAt',
+              updatedAt: '$lastMessageDetails.updatedAt',
               messageType: '$lastMessageDetails.messageType',
               attachments: '$lastMessageDetails.attachments',
             },
@@ -390,7 +395,7 @@ export class ChatService {
       ]),
       this.chatModel.countDocuments(match),
     ]);
-  
+    console.log(chats)
     // Return the data
     return {
       data: chats,
@@ -415,6 +420,24 @@ export class ChatService {
     } catch (error) {
       throw new BadRequestException(error.message);
     }
+  }
+
+
+
+  async handleUpdateUserStatus(userId: string, status: STATUS, lastSeen: Date) {
+       try {
+        const user = await this.userModel.findById(userId)
+        if (!user) throw new NotFoundException('User not found')
+
+        await this.userModel.findByIdAndUpdate(
+          userId,
+          { connection_status: status, last_seen: lastSeen },
+          { upsert: true },
+        );
+        
+       } catch (error) {
+        
+       }
   }
 
   //delete chat
