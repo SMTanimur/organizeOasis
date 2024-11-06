@@ -40,10 +40,10 @@ export class ChatController {
     return this.chatsService.createChat(createChatDto, user);
   }
 
-  @Get()
+  @Get(':organizationId')
   @ApiOperation({ summary: 'Get user chats' })
-  async getUserChats(@CurrentUser() user: UserDto, @Query() query: IChatQuery) {
-    return this.chatsService.getUserChats(user._id, query);
+  async getUserChats( @Param('organizationId') organizationId: string,  @CurrentUser() user: UserDto, @Query() query: IChatQuery) {
+    return this.chatsService.getUserChats(user._id, organizationId, query);
   }
 
   @Get(':chatId')

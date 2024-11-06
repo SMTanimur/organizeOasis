@@ -214,51 +214,56 @@ export class ChatService {
     return chat;
   }
 
-  async getUserChats(userId: string, query: IChatQuery) {
+  async getUserChats(userId: string, organizationId: string, query: IChatQuery) {
     const { page = 1, limit = 20, type, search } = query;
     const skip = (page - 1) * limit;
-
-    // Construct the match object to find chats where the user is a member
-    let match: any = { 'members.user': userId };
-
+  
+    // Construct the match object to find chats where the user is a member and within the organization
+    let match: any = {
+      'members.user': userId,
+      organization: organizationId, // Include the organizationId in the match
+    };
+  
     if (type) {
       match.type = type;
     }
-
+  
     if (search) {
       match.$or = [
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
     }
-
+  
     // Perform aggregation
     const [chats, total] = await Promise.all([
       this.chatModel.aggregate([
         { $match: match }, // Match the chats based on the conditions
-
+  
         // Lookup for member details
         {
           $lookup: {
             from: 'users', // Assuming the user model is called 'users'
             localField: 'members.user',
             foreignField: '_id',
-            as: 'memberDetails', // Name of the output array for user details
+            as: 'memberDetails',
           },
         },
         {
           $unwind: {
             path: '$memberDetails',
-            preserveNullAndEmptyArrays: true, // Keep chats with no member details
+            preserveNullAndEmptyArrays: true,
           },
         },
         {
           $group: {
             _id: '$_id',
             name: { $first: '$name' },
+            type: { $first: '$type' },
             description: { $first: '$description' },
             updatedAt: { $first: '$updatedAt' },
             creator: { $first: '$creator' }, // Get the creator ID
+            organization: { $first: '$organization' },
             members: {
               $push: {
                 user: {
@@ -272,11 +277,41 @@ export class ChatService {
             },
           },
         },
+        // Lookup for creator details
+        {
+          $lookup: {
+            from: 'users', // Assuming the user model is called 'users'
+            localField: 'creator',
+            foreignField: '_id',
+            as: 'creatorDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$creatorDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Lookup for organization details
+        {
+          $lookup: {
+            from: 'organizations',
+            localField: 'organization',
+            foreignField: '_id',
+            as: 'organizationDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$organizationDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         // Lookup for lastMessage details
         {
           $lookup: {
-            from: 'messages', // Assuming the message model is called 'messages'
-            localField: 'lastMessage', // The field in Chat that holds the lastMessage ObjectId
+            from: 'messages',
+            localField: 'lastMessage',
             foreignField: '_id',
             as: 'lastMessageDetails',
           },
@@ -284,14 +319,14 @@ export class ChatService {
         {
           $unwind: {
             path: '$lastMessageDetails',
-            preserveNullAndEmptyArrays: true, // Keep chats with no lastMessage
+            preserveNullAndEmptyArrays: true,
           },
         },
         // Lookup for sender details in lastMessage
         {
           $lookup: {
-            from: 'users', // Assuming the user model is called 'users'
-            localField: 'lastMessageDetails.sender', // The sender field in lastMessage
+            from: 'users',
+            localField: 'lastMessageDetails.sender',
             foreignField: '_id',
             as: 'lastMessageSenderDetails',
           },
@@ -299,11 +334,22 @@ export class ChatService {
         {
           $unwind: {
             path: '$lastMessageSenderDetails',
-            preserveNullAndEmptyArrays: true, // Keep chats with no sender details
+            preserveNullAndEmptyArrays: true,
           },
         },
         {
           $addFields: {
+            creator: {
+              _id: '$creatorDetails._id',
+              firstName: '$creatorDetails.firstName',
+              lastName: '$creatorDetails.lastName',
+              email: '$creatorDetails.email',
+              avatar: '$creatorDetails.avatar',
+            },
+            organization: {
+              _id: '$organizationDetails._id',
+              name: '$organizationDetails.name'
+            },
             lastMessage: {
               _id: '$lastMessageDetails._id',
               content: '$lastMessageDetails.content',
@@ -314,21 +360,22 @@ export class ChatService {
                 email: '$lastMessageSenderDetails.email',
                 avatar: '$lastMessageSenderDetails.avatar',
               },
-              messageType: '$lastMessageDetails.messageType', // Include messageType
-              attachments: '$lastMessageDetails.attachments', // Include attachments
+              messageType: '$lastMessageDetails.messageType',
+              attachments: '$lastMessageDetails.attachments',
             },
           },
         },
         {
           $project: {
-            // Include only necessary fields in the output
             _id: 1,
             name: 1,
+            type:1,
             description: 1,
             updatedAt: 1,
             creator: 1,
+            organization: 1,
             members: 1,
-            lastMessage: 1, // Include the lastMessage field
+            lastMessage: 1,
           },
         },
         {
@@ -341,9 +388,9 @@ export class ChatService {
           $limit: limit,
         },
       ]),
-      this.chatModel.countDocuments(match), // Count the total number of chats
+      this.chatModel.countDocuments(match),
     ]);
-
+  
     // Return the data
     return {
       data: chats,

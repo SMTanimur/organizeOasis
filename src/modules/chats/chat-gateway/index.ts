@@ -35,10 +35,23 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.debug(`WebSocket Server Port: ${3334}`);
   }
   async handleConnection(client: Socket) {
+    // Extract the user from the client data (assuming user info is available)
     const user = client.data.user;
-    client.join(`user_${user.id}`);
     
-    const chats = await this.chatsService.getUserChats(user.id, {});
+    // Extract organizationId from the client query or data
+    const organizationId = client.handshake.query.organizationId as string;
+    if (!organizationId) {
+      client.disconnect(true);
+      return;
+    }
+  
+    // Join the user's room
+    client.join(`user_${user.id}`);
+  
+    // Fetch user chats using user.id and organizationId
+    const chats = await this.chatsService.getUserChats(user.id, organizationId, {});
+  
+    // Join each chat room
     chats.data.forEach(chat => {
       client.join(`chat_${chat._id}`);
     });

@@ -1,6 +1,7 @@
 import { Document, Types } from "mongoose";
 import { User } from "../../users/schema/user.schema";
 import { ChatMemberRole, ChatType, ChatVisibility, MessageType } from "../chat.enum";
+import { ApiPropertyOptional } from "@nestjs/swagger";
 
 
 export interface IChatSettings {
@@ -31,22 +32,38 @@ export interface IReaction {
   createdAt: Date;
 }
 
-export interface IPaginationQuery {
+export class IPaginationQuery {
+  @ApiPropertyOptional({type:Number})
   page?: number;
+  @ApiPropertyOptional({type:Number})
   limit?: number;
+
+  @ApiPropertyOptional({type:String})
   sort?: string;
 }
 
-export interface IChatQuery extends IPaginationQuery {
+export class IChatQuery extends IPaginationQuery {
+  @ApiPropertyOptional({type:ChatType, enum:ChatType})
   type?: ChatType;
+
+  @ApiPropertyOptional({type:String})
   search?: string;
+
+  @ApiPropertyOptional({type:ChatVisibility, enum:ChatVisibility})
   visibility?: ChatVisibility;
 }
 
-export interface IMessageQuery extends IPaginationQuery {
+export class IMessageQuery extends IPaginationQuery {
+  @ApiPropertyOptional({type:Date})
   startDate?: Date;
+
+  @ApiPropertyOptional({type:Date})
   endDate?: Date;
+
+  @ApiPropertyOptional({type:MessageType, enum:MessageType})
   messageType?: MessageType;
+
+  @ApiPropertyOptional({type:String})
   search?: string;
 }
 
