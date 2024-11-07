@@ -46,7 +46,7 @@ export class ChatController {
     return this.chatsService.getUserChats(user._id, organizationId, query);
   }
 
-  @Get(':chatId')
+  @Get(':chatId/single')
   @ApiOperation({ summary: 'Get chat by ID' })
   async getChatById(@Param('chatId') chatId: string) {
     return this.chatsService.getChatById(chatId);

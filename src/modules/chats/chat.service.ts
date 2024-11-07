@@ -205,15 +205,21 @@ export class ChatService {
     }
   }
 
-  // get chat by id
   async getChatById(chatId: string) {
-    const chat = await this.chatModel.findById(chatId);
+    const chat = await this.chatModel
+      .findById(chatId)
+      .populate({
+        path: 'members.user', // Path to populate within `members`
+        model: 'User', 
+      });
+
     if (!chat) {
       throw new NotFoundException('Chat not found');
     }
 
     return chat;
   }
+
 
   async getUserChats(userId: string, organizationId: string, query: IChatQuery) {
     const { page = 1, limit = 20, type, search } = query;
@@ -477,7 +483,7 @@ export class ChatService {
     const [messages, total] = await Promise.all([
       this.messageModel
         .find(filter)
-        .populate('sender', 'name avatar')
+        .populate('sender', ' avatar firstName lastName email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
