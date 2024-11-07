@@ -496,10 +496,13 @@ export class ChatService {
   async createMessage(
     chatId: string,
     createMessageDto: CreateMessageDto,
-    user: any,
+    user: UserDto,
     files?: Express.Multer.File[],
   ) {
-    const member = await this.validateChatMember(chatId, user.id);
+    console.log({chatId})
+    const member = await this.validateChatMember(chatId, user._id);
+     console.log(member,"members")
+    if(!member) throw new ForbiddenException('You are not a member of this chat')
 
     let attachments = [];
     // if (files?.length) {
@@ -511,7 +514,7 @@ export class ChatService {
     const message = new this.messageModel({
       ...createMessageDto,
       chat: chatId,
-      sender: user.id,
+      sender: user._id,
       attachments,
     });
     await message.save();
@@ -533,7 +536,7 @@ export class ChatService {
     user: any,
   ) {
     try {
-      const message = await this.messageModel.findById(messageId);
+      const message = await this.messageModel.findOne({_id: messageId, chat: chatId})
       if (!message) {
         throw new NotFoundException('Message not found');
       }
@@ -556,7 +559,7 @@ export class ChatService {
 
   async deleteMessage(chatId: string, messageId: string, user: any) {
     try {
-      const message = await this.messageModel.findById(messageId);
+      const message = await this.messageModel.findOne({_id: messageId, chat: chatId});
       if (!message) {
         throw new NotFoundException('Message not found');
       }
@@ -623,18 +626,39 @@ export class ChatService {
   }
 
   public async validateChatMember(chatId: string, userId: string) {
-    const chat = await this.chatModel.findById(chatId).populate('members.user');
+    const chat = await this.chatModel
+    .findById(chatId)
+    .populate({
+      path: 'members.user', // Path to populate within `members`
+      model: 'User', 
+    });
+    console.log({chat})
     if (!chat) {
       throw new NotFoundException('Chat not found');
     }
-
+    
     // Check if the user is a member of the chat
-    const member = chat.members.find((m) => m.user._id.toString() === userId);
+    const member = chat.members.find((m) => m.user._id.toString() === userId.toString());
     if (!member) {
       throw new ForbiddenException('Not a member of this chat');
     }
 
     return member;
+  }
+
+  public async validateChat(chatId: string, userId: string) {
+    const chat = await this.chatModel
+    .findById(chatId)
+    .populate({
+      path: 'members.user', // Path to populate within `members`
+      model: 'User', 
+    });
+    console.log({chat})
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
+    
+     return chat;
   }
   private async findDirectChat(userId1: string, userId2: string) {
     const chats = await this.chatModel

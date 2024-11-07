@@ -13,9 +13,7 @@ import {
 import { Type } from 'class-transformer';
 import { ChatMemberRole, ChatType, ChatVisibility } from '../chat.enum';
 import { Project } from '../../projects/schemas';
-import { Organization } from '../../organization/schemas';
 import { Types } from 'mongoose';
-import { Message } from '../schemas/message';
 import { IsObjectId } from 'nestjs-object-id';
 
 

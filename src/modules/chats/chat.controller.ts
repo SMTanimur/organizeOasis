@@ -98,7 +98,7 @@ export class ChatController {
   async createMessage(
     @Param('chatId') chatId: string,
     @Body() createMessageDto: CreateMessageDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: UserDto,
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
     return this.chatsService.createMessage(
@@ -123,6 +123,12 @@ export class ChatController {
       updateMessageDto,
       user,
     );
+  }
+
+  @Get(':chatId/validateMember')
+  @ApiOperation({ summary: 'Validate chat member' })
+  async validateMember( @Param('chatId') chatId: string, @CurrentUser() user: UserDto) {
+    return this.chatsService.validateChat(chatId, user._id)
   }
 
   @Delete(':chatId/messages/:messageId')
