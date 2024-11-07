@@ -16,31 +16,7 @@ const MongoStore = MongoDBStore(session);
 const env = process.env.NODE_ENV || 'dev';
 
 
-class CustomSocketAdapter extends IoAdapter {
-  private readonly logger = new Logger('WebSocketAdapter');
 
-  constructor(
-    app: any,
-    private readonly configurationService: ConfigurationService,
-  ) {
-    super(app);
-  }
-
-  createIOServer(port: number, options?: any) {
-    const wsPort =  3334;
-    this.logger.log(`WebSocket Server starting on port: ${wsPort}`);
-
-    const server = super.createIOServer(wsPort, {
-      ...options,
-      cors: {
-        origin: this.configurationService.WEB_URL,
-        credentials: true,
-      },
-    });
-
-    return server;
-  }
-}
 async function bootstrap() {
   try {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -53,6 +29,7 @@ async function bootstrap() {
         configurationService.WEB_URL,
 
         'http://localhost:3000',
+        'http://localhost:3334',
         'https://accounts.google.com',
       ],
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -65,8 +42,7 @@ async function bootstrap() {
       type: VersioningType.URI,
     });
 
-   // WebSocket Adapter
-   app.useWebSocketAdapter(new CustomSocketAdapter(app, configurationService));
+
 
 
     // Swagger Setup

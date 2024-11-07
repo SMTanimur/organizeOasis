@@ -19,7 +19,7 @@ import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard';
 import { ChatService } from './chat.service';
 import { AddMembersDto, CreateChatDto, UpdateChatDto } from './dto/chat.dto';
-import { CurrentUser } from 'src/common';
+import { CurrentUser, UserDto } from 'src/common';
 import { IChatQuery, IMessageQuery } from './interfaces';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateMessageDto, UpdateMessageDto } from './dto/message.dto';
@@ -35,15 +35,15 @@ export class ChatController {
   @ApiOperation({ summary: 'Create a new chat' })
   async createChat(
     @Body() createChatDto: CreateChatDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: UserDto,
   ) {
     return this.chatsService.createChat(createChatDto, user);
   }
 
-  @Get()
+  @Get(':organizationId')
   @ApiOperation({ summary: 'Get user chats' })
-  async getUserChats(@CurrentUser() user: any, @Query() query: IChatQuery) {
-    return this.chatsService.getUserChats(user.id, query);
+  async getUserChats( @Param('organizationId') organizationId: string,  @CurrentUser() user: UserDto, @Query() query: IChatQuery) {
+    return this.chatsService.getUserChats(user._id, organizationId, query);
   }
 
   @Get(':chatId')

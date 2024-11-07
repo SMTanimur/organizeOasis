@@ -5,17 +5,21 @@ import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { Chat, ChatMember, ChatMemberSchema, ChatSchema } from './schemas';
 import { Message, MessageSchema } from './schemas/message';
-import { ChatsGateway } from './chat-gateway';
 import { ChatSubscriber } from './chat-subscriber';
 import { User, UserSchema } from '../users/schema/user.schema';
+import { Organization, OrganizationSchema } from '../organization/schemas';
+import { UsersModule } from '../users/users.module';
+import { SocketModule } from '../gateway/socket.gateway.module';
 
 
 @Module({
   imports: [
+   SocketModule,
+    UsersModule,
     MongooseModule.forFeature([
       { name: Chat.name, schema: ChatSchema },
       { name: Message.name, schema: MessageSchema },
-      { name: ChatMember.name, schema: ChatMemberSchema },
+      {name:Organization.name, schema:OrganizationSchema},
       {name:User.name, schema:UserSchema},
 
     ]),
@@ -31,7 +35,7 @@ import { User, UserSchema } from '../users/schema/user.schema';
     }),
   ],
   controllers: [ChatController],
-  providers: [ChatService, ChatsGateway, ChatSubscriber],
-  exports: [ChatService, ChatsGateway, ChatSubscriber],
+  providers: [ChatService,  ChatSubscriber],
+  exports: [ChatService,  ChatSubscriber],
 })
 export class ChatModule {}

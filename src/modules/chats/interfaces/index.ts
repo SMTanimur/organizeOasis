@@ -1,5 +1,7 @@
+import { Document, Types } from "mongoose";
 import { User } from "../../users/schema/user.schema";
 import { ChatMemberRole, ChatType, ChatVisibility, MessageType } from "../chat.enum";
+import { ApiPropertyOptional } from "@nestjs/swagger";
 
 
 export interface IChatSettings {
@@ -30,22 +32,38 @@ export interface IReaction {
   createdAt: Date;
 }
 
-export interface IPaginationQuery {
+export class IPaginationQuery {
+  @ApiPropertyOptional({type:Number})
   page?: number;
+  @ApiPropertyOptional({type:Number})
   limit?: number;
+
+  @ApiPropertyOptional({type:String})
   sort?: string;
 }
 
-export interface IChatQuery extends IPaginationQuery {
+export class IChatQuery extends IPaginationQuery {
+  @ApiPropertyOptional({type:ChatType, enum:ChatType})
   type?: ChatType;
+
+  @ApiPropertyOptional({type:String})
   search?: string;
+
+  @ApiPropertyOptional({type:ChatVisibility, enum:ChatVisibility})
   visibility?: ChatVisibility;
 }
 
-export interface IMessageQuery extends IPaginationQuery {
+export class IMessageQuery extends IPaginationQuery {
+  @ApiPropertyOptional({type:Date})
   startDate?: Date;
+
+  @ApiPropertyOptional({type:Date})
   endDate?: Date;
+
+  @ApiPropertyOptional({type:MessageType, enum:MessageType})
   messageType?: MessageType;
+
+  @ApiPropertyOptional({type:String})
   search?: string;
 }
 
@@ -55,7 +73,7 @@ export interface GroupResult {
   id: string;
   name: string;
   members: {
-    userId: string;
+    _id: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -66,12 +84,23 @@ export interface GroupResult {
 
 // Interface for a Member result
 export interface MemberResult {
-  id: string;
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
   avatar?: string;
   type: 'User'; 
+}
+
+// User Interface
+export interface IUser extends Document {
+  _id: Types.ObjectId
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar?: string; // Optional field for user avatar URL
+  createdAt: Date; // Date the user was created
+  updatedAt: Date; // Date the user was last updated
 }
 
 // Combined result type

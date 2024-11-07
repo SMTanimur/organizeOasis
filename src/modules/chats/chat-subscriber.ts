@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
 import { ChatEvent } from './chat.enum';
-import { ChatsGateway } from './chat-gateway';
+import { SocketGateway } from '../gateway/socket.gateway';
+
+
 
 
 @Injectable()
 export class ChatSubscriber {
-  constructor(private readonly chatsGateway: ChatsGateway) {}
+  constructor(private readonly chatsGateway: SocketGateway) {}
 
   @OnEvent('chat.message.created')
   handleMessageCreated(payload: any) {

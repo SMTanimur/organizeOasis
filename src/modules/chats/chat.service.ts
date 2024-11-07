@@ -5,150 +5,180 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { UsersService } from '../users/users.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Chat, ChatDocument, ChatMember } from './schemas';
 import { Message } from './schemas/message';
 import { AddMembersDto, CreateChatDto, UpdateChatDto } from './dto/chat.dto';
 import { ChatMemberRole, ChatType } from './chat.enum';
-import { GroupResult, IChatQuery, IMessageQuery, MemberResult, SearchResult } from './interfaces';
+import {
+  GroupResult,
+  IChatQuery,
+  IMessageQuery,
+  IUser,
+  MemberResult,
+  SearchResult,
+} from './interfaces';
 import { CreateMessageDto, UpdateMessageDto } from './dto/message.dto';
-import { User, UserDocument } from '../users/schema/user.schema';
+import { STATUS, User, UserDocument } from '../users/schema/user.schema';
+import {
+  MemberRole,
+  Organization,
+  OrganizationDocument,
+} from '../organization/schemas';
+import { UserDto } from '../../common';
+import { update } from 'lodash';
 
 @Injectable()
 export class ChatService {
-  
   constructor(
     @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
     @InjectModel(Message.name) private messageModel: Model<Message>,
-    @InjectModel(ChatMember.name) private chatMemberModel: Model<ChatMember>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Organization.name)
+    private organizationModel: Model<OrganizationDocument>,
     // private readonly usersService: UsersService,
     // private readonly filesService: FilesService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async createChat(createChatDto: CreateChatDto, user: any) {
+  async createChat(createChatDto: CreateChatDto, user: UserDto) {
     const { members, type } = createChatDto;
 
-    // Validate members
-    if (type === ChatType.DIRECT && members.length !== 1) {
-      throw new BadRequestException(
-        'Direct chat must have exactly one other member',
-      );
-    }
+    // Validate members for direct chat
+    // if (type === ChatType.DIRECT && members.length !== 1) {
+    //   throw new BadRequestException('Direct chat must have exactly one other member');
+    // }
 
-    // Check if direct chat already exists
+    // Check if a direct chat already exists
     if (type === ChatType.DIRECT) {
-      const existingChat = await this.findDirectChat(user.id, members[0]);
+      const existingChat = await this.findDirectChat(
+        user._id.toString(),
+        members[0].toString(),
+      );
       if (existingChat) {
         return existingChat;
       }
     }
 
-    // Create chat
+    // Create the new chat with the creator as an admin
     const chat = new this.chatModel({
       ...createChatDto,
-      creator: user.id,
+      creator: user._id,
+      members: [
+        {
+          user: user._id,
+          role: ChatMemberRole.ADMIN,
+        },
+        ...members.map((memberId) => ({
+          user: new Types.ObjectId(memberId.user), // Ensure ObjectId type
+          role: ChatMemberRole.MEMBER,
+        })),
+      ],
     });
-    await chat.save();
 
-    // Add members
-    const memberDocs = [
-      {
-        chat: chat._id,
-        user: user.id,
-        role: ChatMemberRole.ADMIN,
-      },
-      ...members.map((memberId) => ({
-        chat: chat._id,
-        user: memberId,
-        role: ChatMemberRole.MEMBER,
-      })),
-    ];
-    await this.chatMemberModel.insertMany(memberDocs);
+    // Save the chat
+    await chat.save();
 
     return {
       message: 'Chat created successfully',
+      chat,
     };
   }
+  // Method to search for members and groups using a single search parameter
+  async searchMembersAndGroups(
+    searchTerm: string,
+    userId: string,
+    organizationId: string,
+  ): Promise<SearchResult[]> {
+    const searchRegex = new RegExp(searchTerm, 'i'); // Case-insensitive regex for search
 
-
-    // Method to search for members and groups using a single search parameter
-    async searchMembersAndGroups(
-      searchTerm: string, 
-      userId: string, 
-      organizationId: string
-    ): Promise<SearchResult[]> {
-      const searchRegex = new RegExp(searchTerm, 'i'); // Case-insensitive regex for search
-  
-      // Find all groups the user has created or joined within the organization
-      const groups = await this.chatModel.find({
+    // Find all groups the user has created or joined within the organization
+    const groups = await this.chatModel
+      .find({
         organization: organizationId,
         $or: [
           { creator: userId }, // User is the creator of the group
           { 'members.user': userId }, // User is a member of the group
         ],
-        name: { $regex: searchRegex } // Search by group name
-      }).populate('members.user', 'firstName lastName email avatar'); // Populate member details
-  
-      // Transform groups into GroupResult format with type
-      const groupResults: GroupResult[] = groups.map(group => ({
-        id: group._id.toString(),
-        name: group.name,
-        members: group.members.map(member => ({
-          userId: member.user as unknown as string,
-          firstName: member.user.firstName,
-          lastName: member.user.lastName,
-          email: member.user.email,
-          avatar: member.user.avatar,
-        })),
-        type: 'Group' // Specify type as 'Group'
+        name: { $regex: searchRegex }, // Search by group name
+      })
+      .populate('members.user', 'firstName lastName email avatar'); // Populate member details
+
+    // Transform groups into GroupResult format with type
+    const groupResults: GroupResult[] = groups.map((group) => ({
+      id: group._id.toString(),
+      name: group.name,
+      members: group.members.map((member) => {
+        const user = member.user as unknown as IUser; // Type assertion
+        return {
+          _id: user._id.toString(),
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          avatar: user.avatar,
+        };
+      }),
+      type: 'Group', // Specify type as 'Group'
+    }));
+    // Retrieve the organization and populate its members
+    const organization = await this.organizationModel
+      .findById(organizationId)
+      .populate('members.user', 'firstName lastName email avatar');
+
+    // Filter members by firstName or lastName using the searchRegex
+    const filteredMembers = organization.members
+      .filter((member: any) => {
+        const user = member.user as IUser;
+        return (
+          searchRegex.test(user.firstName) || searchRegex.test(user.lastName)
+        );
+      })
+      .map((member: any) => ({
+        ...member,
+        user: member.user as IUser,
       }));
-  
-      // Find all members of the organization matching the search term
-      const members = await this.userModel.find({
-        organization: organizationId,
-        $or: [
-          { firstName: { $regex: searchRegex } }, 
-          { lastName: { $regex: searchRegex } }, 
-        ],
-      }).select('firstName lastName email avatar'); // Select necessary fields
-  
-      // Transform members into MemberResult format with type
-      const memberResults: MemberResult[] = members.map(member => ({
-        id: member._id.toString(),
-        firstName: member.firstName,
-        lastName: member.lastName,
-        email: member.email,
-        avatar: member.avatar,
-        type: 'User' // Specify type as 'User'
-      }));
-  
-      // Combine groupResults and memberResults into a single array
-      const combinedResults: SearchResult[] = [...groupResults, ...memberResults];
-  
-      // Shuffle the combined array to return results randomly
-      for (let i = combinedResults.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [combinedResults[i], combinedResults[j]] = [combinedResults[j], combinedResults[i]];
-      }
-  
-      return combinedResults;
+
+    // Transform filtered members into MemberResult format with type
+    const memberResults: MemberResult[] = filteredMembers.map((member) => {
+      const user = member.user as unknown as IUser; // Type assertion
+      return {
+        _id: member.user._id.toString(),
+        firstName: member.user.firstName,
+        lastName: member.user.lastName,
+        email: member.user.email,
+        avatar: member.user.avatar,
+        type: 'User', // Specify type as 'User'
+      };
+    });
+
+    // Combine groupResults and memberResults into a single array
+    const combinedResults: SearchResult[] = [...groupResults, ...memberResults];
+
+    // Shuffle the combined array to return results randomly
+    for (let i = combinedResults.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [combinedResults[i], combinedResults[j]] = [
+        combinedResults[j],
+        combinedResults[i],
+      ];
     }
-  
+
+    return combinedResults;
+  }
 
   // remove mamber from chat
   async removeMember(chatId: string, userId: string, user: any) {
-   
     try {
       const member = await this.validateChatMember(chatId, userId);
       if (member.role !== ChatMemberRole.ADMIN) {
         throw new ForbiddenException('Only admins can remove members');
       }
 
-      await this.chatMemberModel.deleteOne({ _id: member._id });
+      await this.chatModel.findByIdAndUpdate(chatId, {
+        $pull: { members: { user: userId } },
+      });
 
       return {
         message: 'Member removed successfully',
@@ -159,15 +189,17 @@ export class ChatService {
   }
 
   //
-async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
+  async markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
     try {
       const member = await this.validateChatMember(chatId, id);
       if (member.role !== ChatMemberRole.ADMIN) {
         throw new ForbiddenException('Only admins can mark messages as read');
       }
-      
-      await this.messageModel.updateMany({ _id: { $in: messageIds }, chat: chatId }, { $set: { readBy: id } });
 
+      await this.messageModel.updateMany(
+        { _id: { $in: messageIds }, chat: chatId },
+        { $set: { readBy: id } },
+      );
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -179,44 +211,191 @@ async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
     if (!chat) {
       throw new NotFoundException('Chat not found');
     }
+
     return chat;
   }
 
-   
-  // get user chats
-  async getUserChats(userId: string, query: IChatQuery) {
-    const { page = 1, limit = 20, type, search, visibility } = query;
+  async getUserChats(userId: string, organizationId: string, query: IChatQuery) {
+    const { page = 1, limit = 20, type, search } = query;
     const skip = (page - 1) * limit;
-
-    const memberChats = await this.chatMemberModel
-      .find({ user: userId })
-      .select('chat')
-      .lean()
-      .exec();
-
-    const chatIds = memberChats.map((m) => m._id);
-
-    let filter: any = { _id: { $in: chatIds } };
-    if (type) filter.type = type;
-    if (visibility) filter.visibility = visibility;
+  
+    // Construct the match object to find chats where the user is a member and within the organization
+    let match: any = {
+      'members.user': userId,
+      organization: organizationId, // Include the organizationId in the match
+    };
+  
+    if (type) {
+      match.type = type;
+    }
+  
     if (search) {
-      filter.$or = [
+      match.$or = [
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
     }
-
+  
+    // Perform aggregation
     const [chats, total] = await Promise.all([
-      this.chatModel
-        .find(filter)
-        .populate('creator', 'name avatar')
-        .sort({ updatedAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      this.chatModel.countDocuments(filter),
+      this.chatModel.aggregate([
+        { $match: match }, // Match the chats based on the conditions
+  
+        // Lookup for member details
+        {
+          $lookup: {
+            from: 'users', // Assuming the user model is called 'users'
+            localField: 'members.user',
+            foreignField: '_id',
+            as: 'memberDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$memberDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $group: {
+            _id: '$_id',
+            name: { $first: '$name' },
+            type: { $first: '$type' },
+            description: { $first: '$description' },
+            updatedAt: { $first: '$updatedAt' },
+            creator: { $first: '$creator' }, // Get the creator ID
+            organization: { $first: '$organization' },
+            members: {
+              $push: {
+                user: {
+                  _id: '$memberDetails._id',
+                  firstName: '$memberDetails.firstName',
+                  lastName: '$memberDetails.lastName',
+                  email: '$memberDetails.email',
+                  avatar: '$memberDetails.avatar',
+                  connection_status: '$memberDetails.connection_status',
+                  last_seen: '$memberDetails.last_seen',
+                },
+              },
+            },
+          },
+        },
+        // Lookup for creator details
+        {
+          $lookup: {
+            from: 'users', // Assuming the user model is called 'users'
+            localField: 'creator',
+            foreignField: '_id',
+            as: 'creatorDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$creatorDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Lookup for organization details
+        {
+          $lookup: {
+            from: 'organizations',
+            localField: 'organization',
+            foreignField: '_id',
+            as: 'organizationDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$organizationDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Lookup for lastMessage details
+        {
+          $lookup: {
+            from: 'messages',
+            localField: 'lastMessage',
+            foreignField: '_id',
+            as: 'lastMessageDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$lastMessageDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Lookup for sender details in lastMessage
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'lastMessageDetails.sender',
+            foreignField: '_id',
+            as: 'lastMessageSenderDetails',
+          },
+        },
+        {
+          $unwind: {
+            path: '$lastMessageSenderDetails',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            creator: {
+              _id: '$creatorDetails._id',
+              firstName: '$creatorDetails.firstName',
+              lastName: '$creatorDetails.lastName',
+              email: '$creatorDetails.email',
+              avatar: '$creatorDetails.avatar',
+            },
+            organization: {
+              _id: '$organizationDetails._id',
+              name: '$organizationDetails.name'
+            },
+            lastMessage: {
+              _id: '$lastMessageDetails._id',
+              content: '$lastMessageDetails.content',
+              sender: {
+                _id: '$lastMessageSenderDetails._id',
+                firstName: '$lastMessageSenderDetails.firstName',
+                lastName: '$lastMessageSenderDetails.lastName',
+                email: '$lastMessageSenderDetails.email',
+                avatar: '$lastMessageSenderDetails.avatar',
+              },
+              createdAt: '$lastMessageDetails.createdAt',
+              updatedAt: '$lastMessageDetails.updatedAt',
+              messageType: '$lastMessageDetails.messageType',
+              attachments: '$lastMessageDetails.attachments',
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            type:1,
+            description: 1,
+            updatedAt: 1,
+            creator: 1,
+            organization: 1,
+            members: 1,
+            lastMessage: 1,
+          },
+        },
+        {
+          $sort: { updatedAt: -1 },
+        },
+        {
+          $skip: skip,
+        },
+        {
+          $limit: limit,
+        },
+      ]),
+      this.chatModel.countDocuments(match),
     ]);
-
+    // Return the data
     return {
       data: chats,
       total,
@@ -224,7 +403,6 @@ async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
       totalPages: Math.ceil(total / limit),
     };
   }
-
   //update chat
   async updateChat(chatId: string, updateChatDto: UpdateChatDto, user: any) {
     try {
@@ -241,6 +419,24 @@ async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
     } catch (error) {
       throw new BadRequestException(error.message);
     }
+  }
+
+
+
+  async handleUpdateUserStatus(userId: string, status: STATUS, lastSeen: Date) {
+       try {
+        const user = await this.userModel.findById(userId)
+        if (!user) throw new NotFoundException('User not found')
+
+        await this.userModel.findByIdAndUpdate(
+          userId,
+          { connection_status: status, last_seen: lastSeen },
+          { upsert: true },
+        );
+        
+       } catch (error) {
+        
+       }
   }
 
   //delete chat
@@ -363,7 +559,6 @@ async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
       const message = await this.messageModel.findById(messageId);
       if (!message) {
         throw new NotFoundException('Message not found');
-
       }
       await this.messageModel.deleteOne({ _id: messageId });
 
@@ -375,35 +570,50 @@ async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
     }
   }
 
- async 
-
-  async addMembers(chatId: string, addMembersDto: AddMembersDto, user: any) {
+  async addMembers(
+    chatId: string,
+    addMembersDto: AddMembersDto,
+    user: UserDto,
+  ) {
     const { userIds, role = ChatMemberRole.MEMBER } = addMembersDto;
-    const member = await this.validateChatMember(chatId, user.id);
+
+    // Validate the current user's membership and role in the chat
+    const member = await this.validateChatMember(chatId, user._id);
 
     if (member.role !== ChatMemberRole.ADMIN) {
       throw new ForbiddenException('Only admins can add members');
     }
 
-    const existingMembers = await this.chatMemberModel
-      .find({ chat: chatId, user: { $in: userIds } })
-      .select('user');
-    const existingUserIds = existingMembers.map((m) => m.user.toString());
+    // Fetch the chat document
+    const chat = await this.chatModel.findById(chatId);
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
+
+    // Find existing members to avoid adding duplicates
+    const existingUserIds = chat.members.map((m) => m.user.toString());
     const newUserIds = userIds.filter((id) => !existingUserIds.includes(id));
 
     if (newUserIds.length) {
-      const memberDocs = newUserIds.map((userId) => ({
-        chat: chatId,
-        user: userId,
-        role,
-        invitedBy: user.id,
-      }));
-      await this.chatMemberModel.insertMany(memberDocs);
+      // Push new members into the chat members array
+      newUserIds.forEach((userId) => {
+        chat.members.push(
+          new this.chatModel.schema.methods.createMember({
+            user: new Types.ObjectId(userId),
+            role,
+            joinedAt: new Date(),
+          }),
+        );
+      });
 
+      // Save the updated chat document
+      await chat.save();
+
+      // Emit an event for the added members
       this.eventEmitter.emit('chat.members.added', {
         chatId,
         userIds: newUserIds,
-        addedBy: user.id,
+        addedBy: user._id,
       });
     }
 
@@ -412,17 +622,20 @@ async  markMessagesAsRead(chatId: string, messageIds: string[], id: any) {
     };
   }
 
- public async validateChatMember(chatId: string, userId: string) {
-    const member = await this.chatMemberModel.findOne({
-      chat: chatId,
-      user: userId,
-    });
+  public async validateChatMember(chatId: string, userId: string) {
+    const chat = await this.chatModel.findById(chatId).populate('members.user');
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
+
+    // Check if the user is a member of the chat
+    const member = chat.members.find((m) => m.user._id.toString() === userId);
     if (!member) {
       throw new ForbiddenException('Not a member of this chat');
     }
+
     return member;
   }
-
   private async findDirectChat(userId1: string, userId2: string) {
     const chats = await this.chatModel
       .find({
