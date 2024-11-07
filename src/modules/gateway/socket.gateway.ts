@@ -19,6 +19,7 @@ import { ChatEvent } from '../chats/chat.enum';
 	cors: {
 		origin: [
 			'http://localhost:3000',
+      'https://project-management-five-delta.vercel.app/'
 		],
 		credentials: true,
 	},
