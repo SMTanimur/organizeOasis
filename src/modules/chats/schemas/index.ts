@@ -7,7 +7,7 @@ import { ChatMemberRole, ChatType, ChatVisibility } from "../chat.enum";
 
 import { Type } from "class-transformer";
 import { Organization } from "../../organization/schemas";
-import { Project } from "src/modules/projects/schemas";
+import { Project } from "../../projects/schemas";
 import { Message } from "./message";
 import { IsObjectId } from "nestjs-object-id";
 

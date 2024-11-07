@@ -1,4 +1,4 @@
-import { AbstractRepository } from "src/database/abstract.repository";
+import { AbstractRepository } from "../../database/abstract.repository";
 import { Task } from "./schemas";
 import { Logger } from "@nestjs/common";
 import { InjectConnection, InjectModel } from "@nestjs/mongoose";

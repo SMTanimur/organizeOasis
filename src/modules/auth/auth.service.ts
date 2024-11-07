@@ -22,7 +22,7 @@ import { pick } from 'lodash';
 import { OAuth2Client } from 'google-auth-library';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { TokenPayload } from 'src/types/jwt-payload.type';
+import { TokenPayload } from '../../types/jwt-payload.type';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
