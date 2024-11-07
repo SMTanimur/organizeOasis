@@ -395,7 +395,6 @@ export class ChatService {
       ]),
       this.chatModel.countDocuments(match),
     ]);
-    console.log(chats)
     // Return the data
     return {
       data: chats,

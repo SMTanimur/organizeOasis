@@ -13,7 +13,6 @@ import { WsAuthGuard } from 'src/common/guard/ws-auth-guard';
 import { ChatService } from '../chats/chat.service';
 import { STATUS, User } from '../users/schema/user.schema';
 import { ChatEvent } from '../chats/chat.enum';
-import { IUser } from '../chats/interfaces';
 
 
 @WebSocketGateway({
@@ -26,7 +25,7 @@ import { IUser } from '../chats/interfaces';
 	// namespace: 'chat',
 	// transports: ['websocket'],
 })
-// @UseGuards(WsAuthGuard)
+@UseGuards(WsAuthGuard)
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -36,11 +35,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway initialized');
-    this.logger.debug(`WebSocket Server Port: ${3334}`);
   }
 
   async handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+   
     
     // Check if user data is available
     const userId = client.handshake.query.userId
@@ -52,17 +50,24 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.disconnect(true);
       return;
     }
+
+    console.log('userId:', userId);
+
   
     // Join the user's room
     client.join(`user_${userId}`);
   
-    // Fetch user chats
-    const chats = await this.chatsService.getUserChats(userId as string, organizationId, {});
-    console.log({chats})
-    // Join each chat room
+    try {
+      const chats = await this.chatsService.getUserChats(userId as string, organizationId, { page: 1, limit: 10 });
+       // Join each chat room
     chats.data.forEach((chat) => {
       client.join(`chat_${chat._id}`);
     });
+      console.log('Chats fetched in socket:', chats);
+    } catch (error) {
+      console.error('Error fetching chats in socket:', error);
+    }
+   
   
     // Update user status to online
     await this.chatsService.handleUpdateUserStatus(userId as string, STATUS.ONLINE, new Date());
@@ -97,8 +102,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() chatId: string,
   ) {
-    const user = client.data.user;
-    await this.chatsService.validateChatMember(chatId, user.id);
+    const userId = client.handshake.query.userId
+   
+    await this.chatsService.validateChatMember(chatId, userId as string);
     client.join(`chat_${chatId}`);
     return { event: ChatEvent.JOIN, chatId };
   }
@@ -117,10 +123,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { chatId: string; isTyping: boolean },
   ) {
-    const user = client.data.user;
+    const userId = client.handshake.query.userId
     client.broadcast.to(`chat_${data.chatId}`).emit(ChatEvent.TYPING, {
       chatId: data.chatId,
-      userId: user.id,
+      userId: userId,
       isTyping: data.isTyping,
     });
   }
@@ -130,16 +136,16 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { chatId: string; messageIds: string[] },
   ) {
-    const user = client.data.user;
+    const userId = client.handshake.query.userId
     await this.chatsService.markMessagesAsRead(
       data.chatId,
       data.messageIds,
-      user.id,
+      userId,
     );
 
     client.broadcast.to(`chat_${data.chatId}`).emit(ChatEvent.READ, {
       chatId: data.chatId,
-      userId: user.id,
+      userId: userId,
       messageIds: data.messageIds,
     });
   }
