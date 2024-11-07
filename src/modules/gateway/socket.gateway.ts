@@ -9,7 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger, UseGuards } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { WsAuthGuard } from 'src/common/guard/ws-auth-guard';
+import { WsAuthGuard } from '../../common/guard/ws-auth-guard';
 import { ChatService } from '../chats/chat.service';
 import { STATUS, User } from '../users/schema/user.schema';
 import { ChatEvent } from '../chats/chat.enum';
