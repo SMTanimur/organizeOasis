@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document, Schema as MongooseSchema, Types } from 'mongoose';
 import { IsString, IsEnum, IsOptional, IsArray, ValidateNested, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -51,7 +51,7 @@ export class Reaction {
     description: 'User who reacted',
     type: () => User 
   })
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: User;
 
   @ApiProperty({ 
@@ -77,7 +77,7 @@ export class Message extends Document {
     type: () => Chat 
   })
   @Prop({ 
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     ref: 'Chat',
     required: true,
     index: true 
@@ -89,7 +89,7 @@ export class Message extends Document {
     type: () => User 
   })
   @Prop({ 
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     ref: 'User',
     required: true 
   })
@@ -126,8 +126,6 @@ export class Message extends Document {
     type: [Attachment] 
   })
   @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
   @Type(() => Attachment)
   @Prop({ type: [Attachment] })
   attachments?: Attachment[];
@@ -137,8 +135,7 @@ export class Message extends Document {
     type: [User] 
   })
   @IsOptional()
-  @IsArray()
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }] })
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }] })
   mentions?: User[];
 
   @ApiPropertyOptional({ 
@@ -157,7 +154,7 @@ export class Message extends Document {
     type: () => Message 
   })
   @IsOptional()
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Message' })
+  @Prop({ type: Types.ObjectId, ref: 'Message' })
   replyTo?: Message;
 
   @ApiProperty({ 
