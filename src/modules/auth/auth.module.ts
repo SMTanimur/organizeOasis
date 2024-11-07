@@ -5,7 +5,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../users/schema/user.schema';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigurationService } from 'src/configuration/configuration.service';
+import { ConfigurationService } from '../../configuration/configuration.service';
 import { SessionSerializer } from './session.serializer';
 import { CustomStrategy } from './strategy/custom.strategy';
 

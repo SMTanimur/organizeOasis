@@ -19,7 +19,7 @@ import { ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard';
 import { ChatService } from './chat.service';
 import { AddMembersDto, CreateChatDto, UpdateChatDto } from './dto/chat.dto';
-import { CurrentUser, UserDto } from 'src/common';
+import { CurrentUser, UserDto } from '../../common';
 import { IChatQuery, IMessageQuery } from './interfaces';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateMessageDto, UpdateMessageDto } from './dto/message.dto';

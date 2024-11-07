@@ -1,7 +1,5 @@
 import {  forwardRef, Global, Module } from "@nestjs/common";
 
-
-import { AppModule } from "src/app.module";
 import { UsersModule } from "../users/users.module";
 import { ChatModule } from "../chats/chat.module";
 

@@ -33,8 +33,7 @@ import { ConfigurationService } from '../../configuration/configuration.service'
 import { AuthGuard } from '@nestjs/passport';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import ms from 'ms';
-import { TokenPayload } from 'src/types/jwt-payload.type';
-import { Response } from 'express';
+
 import { CustomAuthGuard } from './guards/custom-auth.guard';
 
 @ApiTags('Auth')
