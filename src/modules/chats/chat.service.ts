@@ -222,6 +222,7 @@ export class ChatService {
 
 
   async getUserChats(userId: string, organizationId: string, query: IChatQuery) {
+
     const { page = 1, limit = 20, type, search } = query;
     const skip = (page - 1) * limit;
   
@@ -408,6 +409,70 @@ export class ChatService {
       page,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async getSocketChats(userId: any, organizationId: any) {
+    
+  
+    // Construct the filter query
+    const filter = {
+      'members.user': new Types.ObjectId(userId),
+      organization: new Types.ObjectId(organizationId),
+    };
+  
+    console.log('Database Query Match Object:', filter);
+
+
+    // Fetch chat documents with basic fields
+    const chats = await this.chatModel
+      .find({
+        'members.user': new Types.ObjectId(userId)
+      })
+      .sort({ updatedAt: -1 })
+      .select('_id name type description updatedAt creator organization members lastMessage');
+
+    // Fetch additional details for each chat
+    const chatDetails = await Promise.all(
+      chats.map(async (chat) => {
+        // Lookup for creator details
+        const creatorDetails = await this.userModel
+          .findById(chat.creator)
+          .select('_id firstName lastName email avatar');
+  
+        // Lookup for organization details
+        const organizationDetails = await this.organizationModel
+          .findById(chat.organization)
+          .select('_id name');
+  
+        // Lookup for member details
+        const memberDetails = await this.userModel
+          .find({ _id: { $in: chat.members.map((m) => m.user) } })
+          .select('_id firstName lastName email avatar connection_status last_seen');
+  
+        // Lookup for lastMessage details
+        const lastMessageDetails = chat.lastMessage
+          ? await this.messageModel
+              .findById(chat.lastMessage)
+              .select('_id content sender createdAt updatedAt messageType attachments')
+          : null;
+  
+       
+  
+        return {
+          _id: chat._id,
+          name: chat.name,
+          type: chat.type,
+          description: chat.description,
+          creator: creatorDetails,
+          organization: organizationDetails,
+          members: memberDetails,
+        
+        };
+      }),
+    );
+  
+    // Return the chat details
+    return chatDetails;
   }
   //update chat
   async updateChat(chatId: string, updateChatDto: UpdateChatDto, user: any) {
