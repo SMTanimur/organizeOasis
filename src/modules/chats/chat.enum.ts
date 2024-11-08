@@ -32,7 +32,8 @@ export enum ChatMemberStatus {
 export enum ChatEvent {
   JOIN = 'join',
   LEAVE = 'leave',
-  MESSAGE = 'message',
+  NEW_MESSAGE = 'newmessage',
+  UPDATE_MESSAGE ='updatemessage',
   TYPING = 'typing',
   READ = 'read'
 }
