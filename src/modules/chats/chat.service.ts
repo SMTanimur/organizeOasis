@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { UsersService } from '../users/users.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Chat, ChatDocument, ChatMember } from './schemas';
 import { Message } from './schemas/message';
@@ -205,9 +204,14 @@ export class ChatService {
     }
   }
 
-  // get chat by id
   async getChatById(chatId: string) {
-    const chat = await this.chatModel.findById(chatId);
+    const chat = await this.chatModel
+      .findById(chatId)
+      .populate({
+        path: 'members.user', // Path to populate within `members`
+        model: 'User', 
+      });
+
     if (!chat) {
       throw new NotFoundException('Chat not found');
     }
@@ -215,7 +219,9 @@ export class ChatService {
     return chat;
   }
 
+
   async getUserChats(userId: string, organizationId: string, query: IChatQuery) {
+
     const { page = 1, limit = 20, type, search } = query;
     const skip = (page - 1) * limit;
   
@@ -384,7 +390,7 @@ export class ChatService {
           },
         },
         {
-          $sort: { updatedAt: -1 },
+          $sort: { updatedAt: 1 },
         },
         {
           $skip: skip,
@@ -402,6 +408,69 @@ export class ChatService {
       page,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async getSocketChats(userId: any, organizationId: any) {
+    
+  
+    // Construct the filter query
+    const filter = {
+      'members.user': new Types.ObjectId(userId),
+      organization: new Types.ObjectId(organizationId),
+    };
+  
+
+
+    // Fetch chat documents with basic fields
+    const chats = await this.chatModel
+      .find({
+        'members.user': new Types.ObjectId(userId)
+      })
+      .sort({ updatedAt: -1 })
+      .select('_id name type description updatedAt creator organization members lastMessage');
+
+    // Fetch additional details for each chat
+    const chatDetails = await Promise.all(
+      chats.map(async (chat) => {
+        // Lookup for creator details
+        const creatorDetails = await this.userModel
+          .findById(chat.creator)
+          .select('_id firstName lastName email avatar');
+  
+        // Lookup for organization details
+        const organizationDetails = await this.organizationModel
+          .findById(chat.organization)
+          .select('_id name');
+  
+        // Lookup for member details
+        const memberDetails = await this.userModel
+          .find({ _id: { $in: chat.members.map((m) => m.user) } })
+          .select('_id firstName lastName email avatar connection_status last_seen');
+  
+        // Lookup for lastMessage details
+        const lastMessageDetails = chat.lastMessage
+          ? await this.messageModel
+              .findById(chat.lastMessage)
+              .select('_id content sender createdAt updatedAt messageType attachments')
+          : null;
+  
+       
+  
+        return {
+          _id: chat._id,
+          name: chat.name,
+          type: chat.type,
+          description: chat.description,
+          creator: creatorDetails,
+          organization: organizationDetails,
+          members: memberDetails,
+        
+        };
+      }),
+    );
+  
+    // Return the chat details
+    return chatDetails;
   }
   //update chat
   async updateChat(chatId: string, updateChatDto: UpdateChatDto, user: any) {
@@ -477,7 +546,7 @@ export class ChatService {
     const [messages, total] = await Promise.all([
       this.messageModel
         .find(filter)
-        .populate('sender', 'name avatar')
+        .populate('sender', ' avatar firstName lastName email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -499,9 +568,9 @@ export class ChatService {
     user: UserDto,
     files?: Express.Multer.File[],
   ) {
-    console.log({chatId})
+
     const member = await this.validateChatMember(chatId, user._id);
-     console.log(member,"members")
+   
     if(!member) throw new ForbiddenException('You are not a member of this chat')
 
     let attachments = [];

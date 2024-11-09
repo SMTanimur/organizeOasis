@@ -45,8 +45,8 @@ export class ChatController {
   async getUserChats( @Param('organizationId') organizationId: string,  @CurrentUser() user: UserDto, @Query() query: IChatQuery) {
     return this.chatsService.getUserChats(user._id, organizationId, query);
   }
-
-  @Get(':chatId')
+ 
+  @Get(':chatId/single')
   @ApiOperation({ summary: 'Get chat by ID' })
   async getChatById(@Param('chatId') chatId: string) {
     return this.chatsService.getChatById(chatId);
@@ -101,6 +101,7 @@ export class ChatController {
     @CurrentUser() user: UserDto,
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
+   
     return this.chatsService.createMessage(
       chatId,
       createMessageDto,

@@ -16,7 +16,7 @@ export class ChatSubscriber {
     const { chatId, message } = payload;
     this.chatsGateway.server
       .to(`chat_${chatId}`)
-      .emit(ChatEvent.MESSAGE, message);
+      .emit(ChatEvent.NEW_MESSAGE, message);
   }
 
   @OnEvent('chat.members.added')

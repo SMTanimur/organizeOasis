@@ -10,6 +10,7 @@ import { User, UserSchema } from '../users/schema/user.schema';
 import { Organization, OrganizationSchema } from '../organization/schemas';
 import { UsersModule } from '../users/users.module';
 import { SocketModule } from '../gateway/socket.gateway.module';
+import { SocketGateway } from '../gateway/socket.gateway';
 
 
 @Module({
@@ -35,7 +36,7 @@ import { SocketModule } from '../gateway/socket.gateway.module';
     }),
   ],
   controllers: [ChatController],
-  providers: [ChatService,  ChatSubscriber],
+  providers: [ChatService,  ChatSubscriber,SocketGateway],
   exports: [ChatService,  ChatSubscriber],
 })
 export class ChatModule {}
