@@ -81,10 +81,11 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userId,
       content: data.content,
     });
+  
   }
 
   @SubscribeMessage(ChatEvent.TYPING)
-  handleTyping(@ConnectedSocket() client: Socket, @MessageBody() data: { chatId: string; isTyping: boolean }) {
+  handleTyping(@ConnectedSocket() client: Socket, @MessageBody() data: { chatId: string; isTyping: boolean})  {
     const userId = client.handshake.query.userId;
     this.logger.log(`Typing event from ${userId} in chat ${data.chatId}: ${data.isTyping}`);
     this.server.emit(ChatEvent.TYPING, {
@@ -97,5 +98,6 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userId,
       isTyping: data.isTyping,
     });
+    // Removed undefined variable return statement
   }
 }
