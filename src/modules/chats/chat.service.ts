@@ -592,9 +592,13 @@ export class ChatService {
     // Emit the new message event with the full message object
     this.chatGateway.server
       .to(`chat_${chatId}`)
-      .emit(ChatEvent.NEW_MESSAGE, message);
+      .emit(ChatEvent.NEW_MESSAGE, populatedMessage);
+      return {
 
-    return populatedMessage;
+        newMessage:populatedMessage
+      }
+
+ 
   }
 
   async updateMessage(
