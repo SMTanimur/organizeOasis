@@ -3,8 +3,8 @@ import {  forwardRef, Global, Module } from "@nestjs/common";
 import { UsersModule } from "../users/users.module";
 import { ChatModule } from "../chats/chat.module";
 
-import { ChatService } from "../chats/chat.service";
 import { SocketGateway } from "./socket.gateway";
+
 
 
 @Global()
@@ -12,6 +12,7 @@ import { SocketGateway } from "./socket.gateway";
 	imports: [
 		UsersModule, 
 		forwardRef(() => ChatModule),
+		
 
 	],
 	controllers: [],
