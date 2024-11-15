@@ -2,6 +2,7 @@ import { Document, Types } from "mongoose";
 import { User } from "../../users/schema/user.schema";
 import { ChatMemberRole, ChatType, ChatVisibility, MessageType } from "../chat.enum";
 import { ApiPropertyOptional } from "@nestjs/swagger";
+import { Chat } from "../schemas";
 
 
 export interface IChatSettings {
@@ -105,3 +106,22 @@ export interface IUser extends Document {
 
 // Combined result type
 export type SearchResult = GroupResult | MemberResult;
+
+
+
+export interface IMessage {
+  _id: string
+  chat?: Chat;
+  sender: IUser;
+  content: string;
+  messageType: MessageType;
+  attachments?: IAttachment[];
+  mentions?: IUser[];
+  reactions?: IReaction[];
+  replyTo?: string;
+  readBy: Map<string, boolean>;
+  isEdited: boolean;
+  editedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}

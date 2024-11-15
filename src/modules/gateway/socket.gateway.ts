@@ -8,13 +8,14 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
-import { Logger, UseGuards } from '@nestjs/common';
+import { forwardRef, Inject, Logger, UseGuards } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 
 import { ChatService } from '../chats/chat.service';
 import { STATUS } from '../users/schema/user.schema';
 import { ChatEvent } from '../chats/chat.enum';
 import { send } from 'process';
+import { IMessage } from '../chats/interfaces';
 
 @WebSocketGateway({
   cors: {
@@ -32,7 +33,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
   private logger = new Logger('SocketGateway');
 
-  constructor(private readonly chatsService: ChatService) {}
+  constructor(
+    @Inject(forwardRef(() => ChatService))
+    private readonly chatsService: ChatService,
+  ) {}
 
   async handleConnection(client: Socket) {
     const userId = client.handshake.query.userId;
@@ -87,18 +91,15 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage(ChatEvent.NEW_MESSAGE)
   async handleNewMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { chatId: string; content: string },
+    @MessageBody() message: IMessage,
   ) {
     const userId = client.handshake.query.userId;
     this.logger.log(
-      `New message from ${userId} in chat ${data.chatId}: ${data.content}`,
+      `New message from ${userId} in chat ${message.chat}: ${message.content}`,
     );
 
     // Emit to the room
-    this.server.to(`chat_${data.chatId}`).emit(ChatEvent.NEW_MESSAGE, {
-      userId,
-      content: data.content,
-    });
+    this.server.to(`chat_${message.chat}`).emit(ChatEvent.NEW_MESSAGE, message);
   }
 
   @SubscribeMessage(ChatEvent.TYPING)

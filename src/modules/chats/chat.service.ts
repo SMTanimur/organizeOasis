@@ -3,6 +3,8 @@ import {
   ForbiddenException,
   BadRequestException,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -10,7 +12,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Chat, ChatDocument, ChatMember } from './schemas';
 import { Message } from './schemas/message';
 import { AddMembersDto, CreateChatDto, UpdateChatDto } from './dto/chat.dto';
-import { ChatMemberRole, ChatType } from './chat.enum';
+import { ChatEvent, ChatMemberRole, ChatType } from './chat.enum';
 import {
   GroupResult,
   IChatQuery,
@@ -28,6 +30,7 @@ import {
 } from '../organization/schemas';
 import { UserDto } from '../../common';
 import { update } from 'lodash';
+import { SocketGateway } from '../gateway/socket.gateway';
 
 @Injectable()
 export class ChatService {
@@ -39,6 +42,8 @@ export class ChatService {
     private organizationModel: Model<OrganizationDocument>,
     // private readonly usersService: UsersService,
     // private readonly filesService: FilesService,
+    @Inject(forwardRef(() => SocketGateway))
+    private readonly chatGateway: SocketGateway,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -205,12 +210,10 @@ export class ChatService {
   }
 
   async getChatById(chatId: string) {
-    const chat = await this.chatModel
-      .findById(chatId)
-      .populate({
-        path: 'members.user', // Path to populate within `members`
-        model: 'User', 
-      });
+    const chat = await this.chatModel.findById(chatId).populate({
+      path: 'members.user', // Path to populate within `members`
+      model: 'User',
+    });
 
     if (!chat) {
       throw new NotFoundException('Chat not found');
@@ -219,34 +222,36 @@ export class ChatService {
     return chat;
   }
 
-
-  async getUserChats(userId: string, organizationId: string, query: IChatQuery) {
-
+  async getUserChats(
+    userId: string,
+    organizationId: string,
+    query: IChatQuery,
+  ) {
     const { page = 1, limit = 20, type, search } = query;
     const skip = (page - 1) * limit;
-  
+
     // Construct the match object to find chats where the user is a member and within the organization
     let match: any = {
       'members.user': userId,
       organization: organizationId, // Include the organizationId in the match
     };
-  
+
     if (type) {
       match.type = type;
     }
-  
+
     if (search) {
       match.$or = [
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
     }
-  
+
     // Perform aggregation
     const [chats, total] = await Promise.all([
       this.chatModel.aggregate([
         { $match: match }, // Match the chats based on the conditions
-  
+
         // Lookup for member details
         {
           $lookup: {
@@ -357,7 +362,7 @@ export class ChatService {
             },
             organization: {
               _id: '$organizationDetails._id',
-              name: '$organizationDetails.name'
+              name: '$organizationDetails.name',
             },
             lastMessage: {
               _id: '$lastMessageDetails._id',
@@ -380,7 +385,7 @@ export class ChatService {
           $project: {
             _id: 1,
             name: 1,
-            type:1,
+            type: 1,
             description: 1,
             updatedAt: 1,
             creator: 1,
@@ -411,23 +416,21 @@ export class ChatService {
   }
 
   async getSocketChats(userId: any, organizationId: any) {
-    
-  
     // Construct the filter query
     const filter = {
       'members.user': new Types.ObjectId(userId),
       organization: new Types.ObjectId(organizationId),
     };
-  
-
 
     // Fetch chat documents with basic fields
     const chats = await this.chatModel
       .find({
-        'members.user': new Types.ObjectId(userId)
+        'members.user': new Types.ObjectId(userId),
       })
       .sort({ updatedAt: -1 })
-      .select('_id name type description updatedAt creator organization members lastMessage');
+      .select(
+        '_id name type description updatedAt creator organization members lastMessage',
+      );
 
     // Fetch additional details for each chat
     const chatDetails = await Promise.all(
@@ -436,26 +439,28 @@ export class ChatService {
         const creatorDetails = await this.userModel
           .findById(chat.creator)
           .select('_id firstName lastName email avatar');
-  
+
         // Lookup for organization details
         const organizationDetails = await this.organizationModel
           .findById(chat.organization)
           .select('_id name');
-  
+
         // Lookup for member details
         const memberDetails = await this.userModel
           .find({ _id: { $in: chat.members.map((m) => m.user) } })
-          .select('_id firstName lastName email avatar connection_status last_seen');
-  
+          .select(
+            '_id firstName lastName email avatar connection_status last_seen',
+          );
+
         // Lookup for lastMessage details
         const lastMessageDetails = chat.lastMessage
           ? await this.messageModel
               .findById(chat.lastMessage)
-              .select('_id content sender createdAt updatedAt messageType attachments')
+              .select(
+                '_id content sender createdAt updatedAt messageType attachments',
+              )
           : null;
-  
-       
-  
+
         return {
           _id: chat._id,
           name: chat.name,
@@ -464,11 +469,10 @@ export class ChatService {
           creator: creatorDetails,
           organization: organizationDetails,
           members: memberDetails,
-        
         };
       }),
     );
-  
+
     // Return the chat details
     return chatDetails;
   }
@@ -490,22 +494,17 @@ export class ChatService {
     }
   }
 
-
-
   async handleUpdateUserStatus(userId: string, status: STATUS, lastSeen: Date) {
-       try {
-        const user = await this.userModel.findById(userId)
-        if (!user) throw new NotFoundException('User not found')
+    try {
+      const user = await this.userModel.findById(userId);
+      if (!user) throw new NotFoundException('User not found');
 
-        await this.userModel.findByIdAndUpdate(
-          userId,
-          { connection_status: status, last_seen: lastSeen },
-          { upsert: true },
-        );
-        
-       } catch (error) {
-        
-       }
+      await this.userModel.findByIdAndUpdate(
+        userId,
+        { connection_status: status, last_seen: lastSeen },
+        { upsert: true },
+      );
+    } catch (error) {}
   }
 
   //delete chat
@@ -568,10 +567,10 @@ export class ChatService {
     user: UserDto,
     files?: Express.Multer.File[],
   ) {
-
     const member = await this.validateChatMember(chatId, user._id);
-   
-    if(!member) throw new ForbiddenException('You are not a member of this chat')
+
+    if (!member)
+      throw new ForbiddenException('You are not a member of this chat');
 
     let attachments = [];
     // if (files?.length) {
@@ -590,12 +589,16 @@ export class ChatService {
 
     const populatedMessage = await message.populate('sender', 'name avatar');
 
-    this.eventEmitter.emit('chat.message.created', {
-      chatId,
-      message: populatedMessage,
-    });
+    // Emit the new message event with the full message object
+    this.chatGateway.server
+      .to(`chat_${chatId}`)
+      .emit(ChatEvent.NEW_MESSAGE, populatedMessage);
+      return {
 
-    return populatedMessage;
+        newMessage:populatedMessage
+      }
+
+ 
   }
 
   async updateMessage(
@@ -605,7 +608,10 @@ export class ChatService {
     user: any,
   ) {
     try {
-      const message = await this.messageModel.findOne({_id: messageId, chat: chatId})
+      const message = await this.messageModel.findOne({
+        _id: messageId,
+        chat: chatId,
+      });
       if (!message) {
         throw new NotFoundException('Message not found');
       }
@@ -628,7 +634,10 @@ export class ChatService {
 
   async deleteMessage(chatId: string, messageId: string, user: any) {
     try {
-      const message = await this.messageModel.findOne({_id: messageId, chat: chatId});
+      const message = await this.messageModel.findOne({
+        _id: messageId,
+        chat: chatId,
+      });
       if (!message) {
         throw new NotFoundException('Message not found');
       }
@@ -695,19 +704,19 @@ export class ChatService {
   }
 
   public async validateChatMember(chatId: string, userId: string) {
-    const chat = await this.chatModel
-    .findById(chatId)
-    .populate({
+    const chat = await this.chatModel.findById(chatId).populate({
       path: 'members.user', // Path to populate within `members`
-      model: 'User', 
+      model: 'User',
     });
-    console.log({chat})
+    console.log({ chat });
     if (!chat) {
       throw new NotFoundException('Chat not found');
     }
-    
+
     // Check if the user is a member of the chat
-    const member = chat.members.find((m) => m.user._id.toString() === userId.toString());
+    const member = chat.members.find(
+      (m) => m.user._id.toString() === userId.toString(),
+    );
     if (!member) {
       throw new ForbiddenException('Not a member of this chat');
     }
@@ -716,18 +725,16 @@ export class ChatService {
   }
 
   public async validateChat(chatId: string, userId: string) {
-    const chat = await this.chatModel
-    .findById(chatId)
-    .populate({
+    const chat = await this.chatModel.findById(chatId).populate({
       path: 'members.user', // Path to populate within `members`
-      model: 'User', 
+      model: 'User',
     });
-    console.log({chat})
+    console.log({ chat });
     if (!chat) {
       throw new NotFoundException('Chat not found');
     }
-    
-     return chat;
+
+    return chat;
   }
   private async findDirectChat(userId1: string, userId2: string) {
     const chats = await this.chatModel
