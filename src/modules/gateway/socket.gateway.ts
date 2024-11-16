@@ -103,26 +103,25 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage(ChatEvent.TYPING)
-  handleTyping(
+  async handleTyping(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { chatId: string; isTyping: boolean; sendTo?: string },
+    @MessageBody() data: { chatId: string; isTyping: boolean; sendTo?: string; senderId: string },
   ) {
-    const userId = client.handshake.query.userId;
-    this.logger.log(
-      `Typing event from ${userId} in chat ${data.chatId}: ${data.isTyping}`,
-    );
-    this.server.emit(ChatEvent.TYPING, {
-      chatId: data.chatId,
-      userId,
-      sendTo: data.sendTo,
-      isTyping: data.isTyping,
+    const chat = await this.chatsService.getChatById(data.chatId);
+
+    if (chat.type !== 'direct') {
+      return;
+    }
+
+    chat.members.forEach((member) => {
+      if (member.user._id.toString() !== data.senderId) {
+        console.log('Emitting typing event to:', `user_${member.user._id} for chat ${data.chatId} from ${data.senderId} is typing: ${data.isTyping}`);
+        const isMeTyping = member.user._id.toString() === data.sendTo;
+        this.server.to(`user_${member.user._id}`).emit(ChatEvent.TYPING, {
+          ...data,
+          isMeTyping,
+        });
+      }
     });
-    client.to(`chat_${data.chatId}`).emit(ChatEvent.TYPING, {
-      chatId: data.chatId,
-      sendTo: data.sendTo,
-      userId,
-      isTyping: data.isTyping,
-    });
-    // Removed undefined variable return statement
   }
 }
