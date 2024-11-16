@@ -476,6 +476,8 @@ export class ChatService {
     // Return the chat details
     return chatDetails;
   }
+
+  
   //update chat
   async updateChat(chatId: string, updateChatDto: UpdateChatDto, user: any) {
     try {
